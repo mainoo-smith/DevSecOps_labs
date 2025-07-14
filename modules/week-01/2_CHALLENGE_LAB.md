@@ -1,11 +1,21 @@
-# 🚀 Challenge Lab
+# 🚀 Week 1 Challenge — Your Personal DevOps Learning Contract
 
-## Scenario
-Automate this:
-- Find all `.conf` files in `/etc/myapp/` modified in the last 7 days
-- Archive them with the date
-- Check file permissions
-- Delete originals securely if archive succeeded
-- Log each step
+## 🎯 Goal
+Draft a “DevOps Learning Contract” and host it as a static page.
 
-No step-by-step — solve it!
+## Steps
+1️⃣ Write your contract:
+- Bootcamp goal
+- 3 principles you commit to
+- How you’ll handle blockers
+
+2️⃣ Publish:
+- Use GitHub Pages or Netlify
+- Keep it simple
+
+3️⃣ Add the link to `week1/learning_contract.md`.
+
+## ✅ Success Criteria
+- Clear, honest commitment
+- Online & accessible
+- Shared for feedback
