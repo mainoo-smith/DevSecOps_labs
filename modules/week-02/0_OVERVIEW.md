@@ -1,20 +1,30 @@
-# 🌍 Week 2: Git Version Control — Real-World Scenario
+# 📅 Week 2 — Linux & OS Essentials
 
-## Scenario
-You’ve joined a team that deploys code to production every day.
-You must:
-- Manage code safely with version control.
-- Avoid conflicts with other developers.
-- Keep secrets out of the repository.
-- Write clear commit messages.
+## 🎯 What You'll Learn
+- Understand how operating systems manage processes, files, and users.
+- Get comfortable working with the Linux command line.
+- Learn core shell commands to navigate, edit, and manage servers.
+- Practice secure remote access using SSH.
+- Write simple shell scripts to automate tasks.
+- Cover basic networking to troubleshoot servers.
 
-## Why This Matters
-Version control is the backbone of DevSecOps — every pipeline starts here.
-Mistakes (like committing secrets) can break production or cause security leaks.
+## 🔍 5W1H
+- **Who**: Every DevOps, Cloud, and SysAdmin engineer.
+- **What**: Core OS concepts, shell, users, permissions.
+- **When**: Daily tasks — provisioning, debugging, containerizing.
+- **Where**: Local dev machine, cloud VMs, containers, CI/CD runners.
+- **Why**: So you never get stuck when something breaks in production.
+- **How**: Hands-on practice with a real VM.
 
-## Your Outcome This Week
-✅ Initialize and configure a Git repo  
-✅ Commit, branch, merge, and resolve conflicts  
-✅ Use `.gitignore` correctly  
-✅ Use signed commits (optional) for security  
-✅ Reflect on secure practices for secrets
+## 🗝️ Analogy
+Linux permissions are like office keycards:
+- Files = rooms
+- Users = employees
+- Groups = departments
+- Permissions = who has the right keycard to open which door.
+
+## ✅ Outcomes
+- Spin up a secure VM
+- Use SSH with keys, not passwords
+- Manage users & permissions properly
+- Automate basic tasks with shell scripts
