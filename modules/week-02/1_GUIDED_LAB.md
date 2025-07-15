@@ -1,59 +1,126 @@
-# 🛠 Week 2 Guided Lab — Working with Linux
+# 🛠 Week 2 Guided Lab — Advanced Linux & OS Essentials
 
-## 5W1H: Why This Lab?
-**Who**: You, acting as a junior DevOps engineer.  
-**What**: Learn to set up & secure a Linux server.  
-**When**: Every time you deploy or maintain servers.  
-**Where**: Local, cloud, or containers.  
-**Why**: Secure infra is your first line of defense.  
-**How**: Practice real tasks, repeat often.
+## 🔍 5W1H: Why This Lab?
+
+- **Who**: You, acting as a SysAdmin for production workloads.
+- **What**: Secure, monitor, and automate on Linux.
+- **When**: Daily — for container images, cloud servers, pipelines.
+- **Where**: Local VM or cloud EC2.
+- **Why**: 80% of incidents come from poor OS config & monitoring.
+- **How**: Practice these tasks step-by-step.
+
+---
 
 ## 📌 Prerequisites
-- Cloud or local VM.
-- SSH client.
 
-## 1️⃣ Launch a Linux VM
-- Use AWS EC2 Free Tier, DigitalOcean, or VirtualBox.
+- Local Linux VM or cloud VM (AWS Free Tier).
+- SSH key pair.
 
-## 2️⃣ Connect via SSH
+---
+
+## 1️⃣ Hardening SSH
+
+✅ Disable root login:
 ```bash
-ssh -i mykey.pem ubuntu@your-vm-ip
-whoami
-hostname
+sudo nano /etc/ssh/sshd_config
+# Set PermitRootLogin no
+sudo systemctl restart ssh
 ```
 
-## 3️⃣ Create a Non-Root User
+✅ Change default SSH port to 2222 for extra obscurity:
 ```bash
-sudo adduser devopsstudent
-sudo usermod -aG sudo devopsstudent
-su - devopsstudent
+# Change Port 22 to Port 2222 in sshd_config
+sudo systemctl restart ssh
 ```
 
-## 4️⃣ Navigate & Manage Files
-Try:
-- `ls`, `cd`, `pwd`
-- `chmod`, `chown`
-- Create `scripts/` and `logs/` directories.
-
-## 5️⃣ Write & Run a Script
+✅ Test:
 ```bash
-nano hello.sh
+ssh -p 2222 devopsstudent@your-server-ip
 ```
+
+---
+
+## 2️⃣ Install fail2ban
+
+```bash
+sudo apt update
+sudo apt install fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+sudo fail2ban-client status
+```
+
+---
+
+## 3️⃣ System Monitoring
+
+✅ Use:
+```bash
+top
+htop
+ps aux --sort=-%mem | head
+df -h
+journalctl -xe
+```
+
+✅ Identify suspicious processes & disk usage.
+
+---
+
+## 4️⃣ Automate with cron
+
+✅ Create a cron job:
+```bash
+crontab -e
+# Example: run script every day at 2am
+0 2 * * * /home/devopsstudent/scripts/backup.sh
+```
+
+✅ Write `backup.sh`:
 ```bash
 #!/bin/bash
-echo "Hello!"
-date
+tar -czvf /home/devopsstudent/backup_$(date +%F).tar.gz /home/devopsstudent/data/
 ```
-Make it executable: `chmod +x hello.sh`
 
-## 6️⃣ Basic Networking
-- `ip a`, `ss -tuln`, `ping`, `curl`
+✅ Log output to `/var/log/backup.log`.
+
+---
+
+## 5️⃣ User Audit & Cleanup
+
+✅ List all users:
+```bash
+cut -d: -f1 /etc/passwd
+```
+
+✅ Check last login:
+```bash
+last
+```
+
+✅ Lock old or unused accounts:
+```bash
+sudo usermod -L olduser
+```
+
+✅ Use `auditd` (optional advanced):
+```bash
+sudo apt install auditd
+sudo auditctl -w /etc/passwd -p wa
+```
+
+Monitor `/var/log/audit/audit.log`.
+
+---
 
 ## ✅ Deliverables
-- Non-root user with sudo.
-- SSH keys configured.
-- Script working.
-- `week2/cli_notes.md` in your repo.
 
-## Analogy
-Think of `chmod` as setting who can open which doors in your building.
+- `hardening-notes.md` describing your SSH & fail2ban setup.
+- `backup.sh` in your repo.
+- Screenshots/logs for monitoring tools.
+
+---
+
+## 🏗️ Real Project Context
+
+You’ll use this hardened VM as your **base image** for cloud instances and Docker containers later.

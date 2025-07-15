@@ -44,3 +44,25 @@ Simulate a small team’s workflow:
 - Conflicts handled properly.
 - Tags used for releases.
 - Push all to your remote repo.
+
+
+---
+
+### 🏆 **Updated Challenge**
+
+```markdown
+## ✅ Week 3 Challenge (Extended) — Production-Ready Git Controls
+
+**Scenario:**  
+Your team’s `main` branch is the single source of truth for deployments to staging and production. You must ensure every change is reviewed, tested, and signed.
+
+**Task:**  
+- Add a `main` branch protection rule.
+- Require at least 1 review, passing CI checks, and signed commits.
+- Simulate a push that gets rejected.
+- Open a PR, get approval (or simulate with a second account).
+- Document the workflow in `week3/protected-branch-playbook.md`.
+
+✅ **Bonus:** Connect this to your pipeline:
+- How does your CI/CD verify commits before deploying?
+

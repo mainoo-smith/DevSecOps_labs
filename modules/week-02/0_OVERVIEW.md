@@ -1,30 +1,54 @@
-# 📅 Week 2 — Linux & OS Essentials
+# 📅 Week 2 — Linux & OS Essentials (Beginner → Advanced)
 
 ## 🎯 What You'll Learn
-- Understand how operating systems manage processes, files, and users.
-- Get comfortable working with the Linux command line.
-- Learn core shell commands to navigate, edit, and manage servers.
-- Practice secure remote access using SSH.
-- Write simple shell scripts to automate tasks.
-- Cover basic networking to troubleshoot servers.
+
+- Master Linux basics: files, users, permissions.
+- Use the CLI confidently for day-to-day tasks.
+- Secure SSH access with best practices.
+- **Advanced**:
+  - System monitoring & troubleshooting (`ps`, `top`, `htop`, `journalctl`).
+  - Automate tasks with cron.
+  - Write reusable shell scripts with logging & error handling.
+  - Harden a Linux server (fail2ban, ufw, SSH configs).
+  - Audit users & processes for real-world compliance.
+
+---
 
 ## 🔍 5W1H
-- **Who**: Every DevOps, Cloud, and SysAdmin engineer.
-- **What**: Core OS concepts, shell, users, permissions.
-- **When**: Daily tasks — provisioning, debugging, containerizing.
-- **Where**: Local dev machine, cloud VMs, containers, CI/CD runners.
-- **Why**: So you never get stuck when something breaks in production.
-- **How**: Hands-on practice with a real VM.
+
+- **Who**: DevOps engineers, SysAdmins, SREs — anyone managing Linux systems.
+- **What**: OS-level control means you can fix or automate anything.
+- **When**: Every time you run apps, containers, or cloud VMs.
+- **Where**: Local dev, cloud VMs, container base images, CI/CD runners.
+- **Why**: Linux powers 90% of servers — production troubleshooting happens here.
+- **How**: Learn by doing real tasks with real config files.
+
+---
+
+## 🏗️ Real Project Context
+
+You’ll build and secure a base Linux server template:
+- This will be your **golden image** for cloud instances (Week 5).
+- You’ll use these skills to build Docker base images (Week 7).
+- You’ll automate these setups with Ansible/Terraform (Week 11).
+
+---
 
 ## 🗝️ Analogy
-Linux permissions are like office keycards:
-- Files = rooms
-- Users = employees
-- Groups = departments
-- Permissions = who has the right keycard to open which door.
+
+A Linux server is like the kitchen of your restaurant:
+- Directories = pantries
+- Users = chefs
+- Permissions = who can touch what ingredients
+- Logs = your CCTV & receipts
+- Hardening = locks on the doors & cameras
+
+---
 
 ## ✅ Outcomes
-- Spin up a secure VM
-- Use SSH with keys, not passwords
-- Manage users & permissions properly
-- Automate basic tasks with shell scripts
+
+By the end of this week:
+- SSH securely into servers with keys.
+- Harden the OS against common attacks.
+- Use monitoring tools to troubleshoot real issues.
+- Automate repeat tasks with cron & scripts.
