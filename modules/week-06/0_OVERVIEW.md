@@ -50,3 +50,15 @@ Containers are like **shipping containers**:
 - Run & test your container locally.
 - Use Compose for a dev environment.
 - Scan, sign, and push images to a registry.
+
+# 📅 Week 6 — Containers & Cloud Registries Extended 
+
+## 🎯 What You'll Learn
+
+- Build real container images for microservices.
+- Use Dockerfiles with multi-stage builds.
+- Push images securely to **AWS ECR** (or GCP/ACR).
+- Pull and run your images in dev/staging.
+- Work with Docker Compose for local orchestration.
+- Sign & scan images for supply chain security.
+- Use real tagging & versioning strategies.
