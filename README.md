@@ -7,4 +7,5 @@ The project is divided into modules by week. Every week has an overview, guided 
 After completing each lab/task, you can create an issue and add it to the corresponding project to track your progress.
 
 Enjoy!!!
+
 Inspired by TechWorld With Nana's DevOps Bootcamp Syllabus
