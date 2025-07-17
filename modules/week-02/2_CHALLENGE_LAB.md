@@ -24,3 +24,20 @@ Your production EC2 server is exposed and has root login enabled.
 
 ### 🧠 Stretch Goal:
 Automate the audit script via cronjob or systemd timer.
+
+
+=====================================================
+# Challenge Lab – Week 2
+
+## Scenario:
+
+You're the platform engineer setting up a staging server for the `backend-api`.
+
+✅ Tasks:
+- Create a secure user `pipeline` for automation
+- Harden SSH access (no root login, key-based only)
+- Set up `fail2ban` and UFW
+- Write a `restart-if-down.sh` that checks if `backend-api` is inactive and restarts it
+
+💡 Bonus:
+- Use cron to run the health check every hour

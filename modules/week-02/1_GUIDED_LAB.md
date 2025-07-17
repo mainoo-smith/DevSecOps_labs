@@ -89,3 +89,99 @@ You’ve:
     Installed essential security packages
     Created your first health-check script
     Prepared an EC2 instance for upcoming CI/CD and automation flows
+
+===================================================================
+# Guided Lab – Week 2: Secure EC2 for App Deployment
+
+---
+
+## ☁️ Objective
+
+Provision and harden an EC2 instance that will host your `backend-api` microservice in staging.
+
+---
+
+## 🧪 Step 1: Provision EC2 on AWS
+
+- Ubuntu 22.04 or Amazon Linux 2
+- t2.micro or t3.small
+- Allow ports: 22 (SSH), 3000 (API), deny all others
+
+---
+
+## 🔐 Step 2: Create SSH Key Pair & Access Server
+
+```bash
+ssh-keygen -t rsa -b 4096 -C "you@example.com"
+ssh -i ~/.ssh/id_rsa ubuntu@<EC2_PUBLIC_IP>
+```
+
+---
+
+## 👤 Step 3: Create `devops` User
+
+```bash
+sudo adduser devops
+sudo usermod -aG sudo devops
+sudo mkdir -p /home/devops/.ssh
+sudo cp ~/.ssh/authorized_keys /home/devops/.ssh/
+sudo chown -R devops:devops /home/devops/.ssh
+```
+
+---
+
+## 🔐 Step 4: Harden SSH
+
+```bash
+sudo nano /etc/ssh/sshd_config
+```
+
+Update:
+```
+PermitRootLogin no
+PasswordAuthentication no
+AllowUsers devops
+```
+
+Restart SSH:
+```bash
+sudo systemctl restart sshd
+```
+
+---
+
+## 🧱 Step 5: Set Up Firewall & Fail2Ban
+
+```bash
+sudo apt update && sudo apt install ufw fail2ban -y
+sudo ufw allow 22/tcp
+sudo ufw allow 3000/tcp
+sudo ufw enable
+```
+
+---
+
+## 🛠️ Step 6: Write Health Check Script
+
+Create `/opt/backend-api/health-check.sh`
+
+```bash
+#!/bin/bash
+echo "==== Health Check ===="
+uptime
+df -h
+free -m
+systemctl status backend-api.service
+```
+
+```bash
+chmod +x /opt/backend-api/health-check.sh
+```
+
+---
+
+## ✅ Outcome
+
+- EC2 instance secured for staging use
+- `devops` user created for GitHub Actions or Ansible access
+- API service monitored via health script

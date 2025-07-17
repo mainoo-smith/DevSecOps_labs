@@ -28,3 +28,21 @@
 - `auditd`
 - `clamav`
 - `chkrootkit`
+
+
+===================================================
+# Security – Week 2
+
+## Why It Matters:
+
+- Your EC2 server will be the first entry point for deploying real code
+- Without SSH hardening, anyone can try brute force attacks
+- Without monitoring, your app could silently crash
+
+## Best Practices:
+
+- Disable root login
+- Use `AllowUsers` in SSH
+- Apply firewalls for minimal ports
+- Use `fail2ban` for brute force detection
+- Log all cron and system activity

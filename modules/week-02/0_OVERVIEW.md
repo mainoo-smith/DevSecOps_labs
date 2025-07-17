@@ -52,3 +52,43 @@ By the end of this week:
 - You’ll be able to securely access and administer cloud servers
 - You’ll prepare the foundation to automate this via config mgmt
 - You’ll start thinking like a systems operator with security in mind
+
+
+# Week 02: Linux Essentials, SSH, and Secure Remote Access (App-Aware)
+
+## 🧠 What You’ll Learn
+
+- How to securely configure a Linux server to support real deployments
+- SSH key-based access for DevOps pipelines
+- Creating user roles and hardening server access
+- Writing system health scripts tailored for running microservices
+
+---
+
+## 📦 Real-World Project Scenario
+
+You're working on the `backend-api` microservice for your cloud-native eCommerce platform.
+
+This week’s goal is to:
+- Provision and harden an EC2 instance where `backend-api` will be deployed for staging.
+- Create a `devops` user that GitHub Actions or Ansible can later use for deployment.
+- Write a `health-check.sh` script that reports CPU, memory, and the service status of `backend-api`.
+
+---
+
+## 🔍 5W1H of Linux + SSH
+
+| Prompt | Answer |
+|--------|--------|
+| **What** | Secure the infrastructure for app deployment |
+| **Why** | All DevOps pipelines and tools must connect and deploy securely |
+| **Who** | DevOps engineers, platform engineers, CI/CD tools |
+| **When** | Initial staging deployment, automation setup, pre-production |
+| **Where** | AWS EC2 server running Ubuntu 22.04 or Amazon Linux 2 |
+| **How** | Secure shell, firewalls, hardening, health checks
+
+---
+
+## 🔧 Analogy
+
+> Think of this instance like your company’s **warehouse staging area**: before anything goes to production, it gets stored, inspected, and verified here. You must secure the warehouse, control who can enter, and ensure it has basic fire safety and power checks — just like monitoring memory, CPU, and service uptime.
