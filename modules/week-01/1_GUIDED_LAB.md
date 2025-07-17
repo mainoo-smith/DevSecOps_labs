@@ -4,6 +4,7 @@
 Simulate how real teams use Git to collaborate, review code, and protect critical branches.
 
 ---
+The project should already have git initialized. Continue with step 2. Otherwise, start from step 1 to initialize a git project.
 
 ## 🧪 Step 1: Initialize the Git Project
 
