@@ -1,10 +1,13 @@
-# 📘 Week 1 Reflection — Big Picture
+# Reflection – Week 1
 
-## Prompts
-- What does DevOps mean to you now?
-- Which part of the workflow is most familiar?
-- Which feels intimidating?
-- How will you influence “Shift Left” in your work?
-- What principle can you apply today?
+### ✅ What did you learn this week?
 
-Write your answers in `week1/reflection.md`.
+- Did Git’s branching model make sense?
+- Did you face rebase conflicts? How did you solve them?
+- What parts of DevOps culture resonate with your past experience?
+- What still confuses you?
+
+### 🧘 Tips:
+- Revisit analogies when stuck
+- Pair with a partner to review Git flows
+- Start documenting your journey — this will become your portfolio!

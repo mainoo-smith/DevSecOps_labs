@@ -1,17 +1,17 @@
-# 🔒 Week 1 Security Principles — Shift Left
+# Security – Week 1: Git & Branch Protection
 
-## What You Should Know
-- Security is everyone’s job.
-- DevSecOps means baking security in early.
-- Start asking:
-  - How do we manage secrets?
-  - What if an artifact is tampered?
-  - Who can access prod?
+## 🛡️ Why This Matters:
+- Main branch is your **production infrastructure**
+- Bad merges = broken apps or exposed secrets
 
-## Tips
-- Use .gitignore for secrets.
-- If you push a secret, rotate it!
-- Use MFA for your Git host.
+## ✅ Git Security Best Practices:
+- Require PR reviews
+- Require signed commits (`git config commit.gpgsign true`)
+- Protect `main` with:
+   - Status checks
+   - Disallow force pushes
+   - Require up-to-date branches
 
-## Example
-Many breaches happen from exposed secrets. Scan your commits, protect creds, review access.
+## 🧠 Bonus:
+Try setting up `CODEOWNERS` to define who can approve certain files/services.
+

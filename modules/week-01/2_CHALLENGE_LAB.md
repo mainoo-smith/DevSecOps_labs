@@ -1,21 +1,26 @@
-# 🚀 Week 1 Challenge — Your Personal DevOps Learning Contract
 
-## 🎯 Goal
-Draft a “DevOps Learning Contract” and host it as a static page.
+---
 
-## Steps
-1️⃣ Write your contract:
-- Bootcamp goal
-- 3 principles you commit to
-- How you’ll handle blockers
+## `challenge.md`
 
-2️⃣ Publish:
-- Use GitHub Pages or Netlify
-- Keep it simple
+```markdown
+# Challenge Lab – Week 1
 
-3️⃣ Add the link to `week1/learning_contract.md`.
+### 🧪 Scenario:
+You are part of a platform engineering team.
 
-## ✅ Success Criteria
-- Clear, honest commitment
-- Online & accessible
-- Shared for feedback
+1. Your task is to:
+   - Add a `README.md` file to the repo
+   - Create a `devops-notes.md` in a new branch called `feature/docs`
+   - Add 3 commits:
+     - Add initial outline
+     - Add Git basics
+     - Add DevOps 5W1H
+   - Rebase your branch on `main`
+   - Push and open a pull request
+   - Enable branch protection
+
+2. 🎯 Goal:
+   - Use at least one **rebase**
+   - Use **Squash & Merge**
+   - Avoid force-pushing to main

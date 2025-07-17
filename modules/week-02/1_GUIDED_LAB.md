@@ -1,126 +1,91 @@
-# 🛠 Week 2 Guided Lab — Advanced Linux & OS Essentials
-
-## 🔍 5W1H: Why This Lab?
-
-- **Who**: You, acting as a SysAdmin for production workloads.
-- **What**: Secure, monitor, and automate on Linux.
-- **When**: Daily — for container images, cloud servers, pipelines.
-- **Where**: Local VM or cloud EC2.
-- **Why**: 80% of incidents come from poor OS config & monitoring.
-- **How**: Practice these tasks step-by-step.
+# Guided Lab – Week 2: Linux + SSH + Server Hardening
 
 ---
 
-## 📌 Prerequisites
+## 🔧 Project Setup: First EC2 for Internal DevOps Tools
 
-- Local Linux VM or cloud VM (AWS Free Tier).
-- SSH key pair.
+You're about to secure your **first EC2 instance** which will be used later to:
+
+- Run Ansible playbooks
+- Execute early CI/CD deployment jobs
+- Possibly expose a staging frontend or API
+- Log backups or cron-based scripts
+
+This will serve as your **internal platform ops server**.
 
 ---
 
-## 1️⃣ Hardening SSH
+## ☁️ Step 1: Provision an EC2 Instance
 
-✅ Disable root login:
+- Use AWS Console or Terraform to provision:
+  - OS: Ubuntu 22.04 LTS or Amazon Linux 2
+  - Instance type: t2.micro or t3.small
+  - Key pair: select or generate one
+
+---
+
+## 🔑 Step 2: Connect Securely via SSH Key
+
+```bash
+ssh-keygen -t rsa -b 4096 -C "you@example.com"
+#Use ssh-copy-id or manually copy public key:
+ssh ec2-user@<public-ip>  # AWS default user
+```
+
+## 👤 Step 3: Create a DevOps User for Platform Tasks
+```bash
+sudo adduser devops
+sudo usermod -aG sudo devops
+
+#Setup their SSH access:
+sudo mkdir /home/devops/.ssh
+sudo cp ~/.ssh/authorized_keys /home/devops/.ssh/
+sudo chown -R devops:devops /home/devops/.ssh
+
+```
+
+## 🚫 Step 4: Harden the SSH Config
 ```bash
 sudo nano /etc/ssh/sshd_config
-# Set PermitRootLogin no
-sudo systemctl restart ssh
+# Make these changes:
+PermitRootLogin no
+PasswordAuthentication no
+AllowUsers devops
+
+# Then restart:
+sudo systemctl restart sshd
+
 ```
 
-✅ Change default SSH port to 2222 for extra obscurity:
+## 🔐 Step 5: Install Basic Defense Tools
 ```bash
-# Change Port 22 to Port 2222 in sshd_config
-sudo systemctl restart ssh
-```
-
-✅ Test:
-```bash
-ssh -p 2222 devopsstudent@your-server-ip
-```
-
----
-
-## 2️⃣ Install fail2ban
-
-```bash
-sudo apt update
-sudo apt install fail2ban
+sudo apt update && sudo apt install ufw fail2ban -y
+sudo ufw allow OpenSSH
+sudo ufw enable
 sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-sudo fail2ban-client status
 ```
 
----
-
-## 3️⃣ System Monitoring
-
-✅ Use:
+## 🧪 Step 6: Write a Health Script
 ```bash
-top
-htop
-ps aux --sort=-%mem | head
-df -h
-journalctl -xe
-```
-
-✅ Identify suspicious processes & disk usage.
-
----
-
-## 4️⃣ Automate with cron
-
-✅ Create a cron job:
-```bash
-crontab -e
-# Example: run script every day at 2am
-0 2 * * * /home/devopsstudent/scripts/backup.sh
-```
-
-✅ Write `backup.sh`:
-```bash
+#This script can be reused for alerting or pre-deploy checks:
+touch system-check.sh && chmod +x system-check.sh
+#Content:
 #!/bin/bash
-tar -czvf /home/devopsstudent/backup_$(date +%F).tar.gz /home/devopsstudent/data/
+echo "=== SYSTEM CHECK ==="
+uptime
+df -h
+free -m
+last -a | head -5
+
+#run it
+./system-check.sh
+Later, we’ll run this via Ansible or CI runner
 ```
 
-✅ Log output to `/var/log/backup.log`.
-
----
-
-## 5️⃣ User Audit & Cleanup
-
-✅ List all users:
-```bash
-cut -d: -f1 /etc/passwd
-```
-
-✅ Check last login:
-```bash
-last
-```
-
-✅ Lock old or unused accounts:
-```bash
-sudo usermod -L olduser
-```
-
-✅ Use `auditd` (optional advanced):
-```bash
-sudo apt install auditd
-sudo auditctl -w /etc/passwd -p wa
-```
-
-Monitor `/var/log/audit/audit.log`.
-
----
-
-## ✅ Deliverables
-
-- `hardening-notes.md` describing your SSH & fail2ban setup.
-- `backup.sh` in your repo.
-- Screenshots/logs for monitoring tools.
-
----
-
-## 🏗️ Real Project Context
-
-You’ll use this hardened VM as your **base image** for cloud instances and Docker containers later.
+## ✅ Outcome
+You’ve:
+    Created a secure DevOps user
+    Hardened SSH access
+    Installed essential security packages
+    Created your first health-check script
+    Prepared an EC2 instance for upcoming CI/CD and automation flows
