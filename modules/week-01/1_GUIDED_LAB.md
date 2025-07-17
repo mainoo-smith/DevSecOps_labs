@@ -17,14 +17,16 @@ git commit -m "Initialize project structure"
 ```
 
 ## 🔀 Step 2: Create a Feature Branch (e.g., Auth)
-```bash git checkout -b feature/auth-service
+```bash
+git checkout -b feature/auth-service
 touch auth-service/main.py
 git add .
 git commit -m "Add placeholder for auth service"
 ```
 
 ## 📤 Step 3: Push to Remote Repo
-```bash git remote add origin https://github.com/YOUR_USER/ecommerce-platform.git
+```bash
+git remote add origin https://github.com/YOUR_USER/ecommerce-platform.git
 git push -u origin feature/auth-service
 ```
 
