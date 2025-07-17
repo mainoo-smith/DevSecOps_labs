@@ -4,7 +4,7 @@ The project comes with scripts that can be run locally or on any VM.
 You can play around with the commands, break things, and fix them to reinforce learning.
 
 Curriculum structure:
-```bash
+
   | Week      | Theme                                   | Includes (From All Sources)                                               |
 | --------- | --------------------------------------- | ------------------------------------------------------------------------- |
 | **01**    | DevOps Mindset + Git                    | DevOps 5W1H, CI/CD overview, Git basics → GitFlow, GitHub actions trigger |
@@ -30,7 +30,7 @@ Curriculum structure:
 | **21**    | SRE: SLIs, SLOs, SLAs                   | Golden signals, alert fatigue, error budgets                              |
 | **22–24** | Capstone: DevSecOps Platform Build      | CI/CD → Secure Container → ECR → EKS → GitOps → Observability             |
 
-```
+
 The project is divided into modules by week. Every week has an overview, guided labs, challenge lab, reflection, security considerations, and expected outcome.
 After completing each lab/task, you can create an issue and add it to the corresponding project to track your progress.
 
