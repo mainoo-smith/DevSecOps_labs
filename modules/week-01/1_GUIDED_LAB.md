@@ -18,6 +18,9 @@ git commit -m "Initialize project structure"
 
 ## 🔀 Step 2: Create a Feature Branch (e.g., Auth)
 ```bash
+At the root of the project create a new directory 'ecommerce-platform'
+cd into ecommerse-platform
+mkdir frontend backend-api auth-service db
 git checkout -b feature/auth-service
 touch auth-service/main.py
 git add .
