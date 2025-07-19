@@ -4,6 +4,7 @@
 Simulate how real teams use Git to collaborate, review code, and protect critical branches.
 
 ---
+The project should already have git initialized. Continue with step 2. Otherwise, start from step 1 to initialize a git project.
 
 ## 🧪 Step 1: Initialize the Git Project
 
@@ -16,14 +17,19 @@ git commit -m "Initialize project structure"
 ```
 
 ## 🔀 Step 2: Create a Feature Branch (e.g., Auth)
-```bash git checkout -b feature/auth-service
+```bash
+At the root of the project create a new directory 'ecommerce-platform'
+cd into ecommerse-platform
+mkdir frontend backend-api auth-service db
+git checkout -b feature/auth-service
 touch auth-service/main.py
 git add .
 git commit -m "Add placeholder for auth service"
 ```
 
 ## 📤 Step 3: Push to Remote Repo
-```bash git remote add origin https://github.com/YOUR_USER/ecommerce-platform.git
+```bash
+git remote add origin https://github.com/YOUR_USER/ecommerce-platform.git
 git push -u origin feature/auth-service
 ```
 

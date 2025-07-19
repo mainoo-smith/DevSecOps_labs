@@ -12,7 +12,8 @@ You're about to secure your **first EC2 instance** which will be used later to:
 - Log backups or cron-based scripts
 
 This will serve as your **internal platform ops server**.
-
+Note: Depending of the EC2 instance type, these commands may change slightly. Example, Amazon Linus 2 and Ubuntu may have different 
+Comands and path names
 ---
 
 ## ☁️ Step 1: Provision an EC2 Instance
@@ -54,6 +55,9 @@ AllowUsers devops
 
 # Then restart:
 sudo systemctl restart sshd
+
+#Test ssh in a new terminal
+ssh -i your-key.pem devops@<public-ip>
 
 ```
 
