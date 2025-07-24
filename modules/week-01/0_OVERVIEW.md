@@ -1,52 +1,94 @@
-# Week 01: DevOps Foundations + Git Fundamentals
+Excellent — we’ll proceed with Option 1: Secure Note/Task Manager App as the foundation. It will evolve into multiple microservices (Auth, Notes, Notifications, Audit Logging, Week 1 – Linux & OS Fundamentals for DevSecOps
 
-## 🧠 What You’ll Learn
-- What DevOps *really* means beyond buzzwords
-- How software delivery has evolved (Waterfall → Agile → DevOps → GitOps)
-- Git basics: repo, clone, commit, push, branch, merge, rebase
-- Git collaboration: pull requests, branch protection
-- Introduction to the real project we’ll build throughout the program
+This module will:
+	•	Set up the first VM or containerized environment for local dev and remote deployment
+	•	Create a Linux user, secure directory, and SSH setup
+	•	Secure file access and understand UIDs, GIDs, permissions, sudo, root security
+	•	Establish early DevSecOps habits like logging, auditing, and minimal privilege
 
-## 🔍 5W1H of DevOps
+I’ll now generate the following files and paste them directly into the chat:
+	•	Week01/Overview.md
+	•	Week01/GuidedLab.md
+	•	Week01/ChallengeLab.md
+	•	Week01/Security.md
+	•	Week01/Reflection.md
 
-| Prompt | Answer |
-|--------|--------|
-| **What** | A culture + practices + tools to deliver software faster, safer, and more reliably |
-| **Why**  | Traditional dev & ops handoffs caused long lead times, failures, and blame |
-| **Who**  | Devs, Ops, SREs, QA, Security — working together instead of in silos |
-| **When**| When you need to ship frequently, respond to change fast, and scale sustainably |
-| **Where**| From startup CI/CD pipelines to Fortune 500 infra platforms |
-| **How** | Automate all stages of software lifecycle using shared codebases, pipelines, monitoring, and collaboration |
+Starting now with Overview.md…
 
-## 📦 Real-World Analogy
+📁 Week01/Overview.md – Linux & OS Fundamentals for DevSecOps
 
-> DevOps is like building **a Formula 1 pit crew**:
-> - Dev = driver (writes the app)
-> - Ops = pit crew (keeps the car running safely)
-> - QA = sensors (quality checks)
-> - Security = race rules (enforcement)
-> All must work in sync. **Any lag = lost race.**
+⸻
 
-## 💡 Why Git?
+🧠 Module Theory: Why Linux and OS Concepts Matter in DevSecOps
 
-Git is the **foundation of everything** we’ll build. Every change to your infrastructure, code, and even Kubernetes manifests will live in Git — enabling collaboration, versioning, and rollback.
+In DevSecOps, security starts from the ground up. The operating system is the foundation upon which your CI/CD tools, containers, microservices, and cloud infrastructure all run.
 
----
+While DevOps often emphasizes automation and pipelines, DevSecOps demands awareness of what’s happening under the hood — how permissions work, how processes behave, what file ownership means, and how attackers might exploit insecure configurations.
 
-## 🏗️ This Week’s Project Kickoff
+You’ll also encounter real-world cases where container escapes, privilege escalations, or insecure SSH setups were entry points for attackers. Knowing how to secure the OS and understand its audit signals is non-negotiable.
 
-We’ll create a base repo for our eCommerce platform with these folders:
+⸻
 
-ecommerce-platform/
-├── frontend/ # React-based UI
-├── backend-api/ # NodeJS/Flask REST API
-├── auth-service/ # JWT auth microservice
-├── db/ # PostgreSQL config
-└── .github/ # Actions will go here later
+🎯 Objectives
+
+By the end of this module, you will:
+	•	Understand core Linux OS concepts that impact security:
+	•	Users, groups, permissions, processes, file hierarchy
+	•	SUID/SGID/sticky bits, chroot, sudo, SSH hardening
+	•	Set up a secure Linux-based environment for your evolving DevSecOps app
+	•	Build the first layer of your DevSecOps-friendly development VM
+	•	Apply OS-level hardening techniques used in production environments
+
+⸻
+
+📦 Application Tie-In: Evolving the Project
+
+This week, we start the project from the bottom:
+	•	Provision the initial development and deployment VM
+	•	Create an isolated Linux user that will run the application and CI/CD agents
+	•	Prepare the directory structure where the “Notes App” microservices will live
+	•	Set file and execution permissions based on least privilege principles
+
+As the app evolves, this VM/instance will:
+	•	Host Git runners and deploy services (early)
+	•	Later be containerized and deployed to ECS/K8s (week 6+)
+	•	Serve as a runtime hardening sandbox (week 12+)
+
+⸻
+
+🔧 Tools & Technologies
+	•	Linux (Ubuntu/Debian-based VM or EC2)
+	•	SSH, Bash
+	•	chmod, chown, sudo, groups, ps, top
+	•	Optional: ufw, fail2ban, auditd, lynis
+
+⸻
+
+🛡️ DevSecOps Concepts Introduced
+
+Concept	Relevance
+Principle of Least Privilege	Preventing unauthorized access to files and commands
+User and Group Segmentation	Isolating services and users
+Secure Defaults	File system and SSH security
+Auditing and Logging	Tracking what happened and when
+OS Hardening	Disabling unnecessary features or access paths
 
 
-You’ll practice:
-- Creating branches per service
-- Making commits, pull requests
-- Enabling branch protection
-- Merging changes safely
+⸻
+
+📁 Deliverables
+	•	A hardened development Linux VM or EC2 instance
+	•	A secure user environment for DevSecOps tooling
+	•	A locked-down SSH access mechanism
+	•	File permission settings tailored to security best practices
+	•	A README.md summarizing system security controls configured
+
+⸻
+
+🔜 Coming up next:
+	•	Week01/GuidedLab.md: We’ll walk through setting up the hardened VM and user
+	•	Week01/ChallengeLab.md: You’ll simulate a multi-user system and secure it
+	•	Week01/Security.md: Discuss common misconfigurations and tools like Lynis
+	•	Week01/Reflection.md: Deep questions + preparation for Week 2 (networking)
+
+Let me know if you’d like me to proceed with GuidedLab.md right away.
