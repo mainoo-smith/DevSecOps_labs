@@ -1,191 +1,157 @@
-# Guided Lab – Week 2: Linux + SSH + Server Hardening
+📁 Week02/GuidedLab.md – Enforcing Host-Based Network Isolation Between Services
 
----
+⸻
 
-## 🔧 Project Setup: First EC2 for Internal DevOps Tools
+🛠️ Objective
 
-You're about to secure your **first EC2 instance** which will be used later to:
+Simulate two microservices — frontend (Node.js) and backend (Python) — running on the same Linux VM.
+Then apply host-level firewall rules to restrict which services can talk to each other.
 
-- Run Ansible playbooks
-- Execute early CI/CD deployment jobs
-- Possibly expose a staging frontend or API
-- Log backups or cron-based scripts
+This lays the foundation for secure network policies in ECS and Kubernetes later in the bootcamp.
 
-This will serve as your **internal platform ops server**.
-Note: Depending of the EC2 instance type, these commands may change slightly. Example, Amazon Linus 2 and Ubuntu may have different 
-Comands and path names
----
+⸻
 
-## ☁️ Step 1: Provision an EC2 Instance
+⚙️ Environment Assumptions
+	•	You’re using the hardened Linux VM from Week 1
+	•	You have devsecops user access with sudo privileges
+	•	Node.js and Python are installed (node -v, python3 --version)
+	•	Ports:
+	•	Frontend (Node.js): port 3000
+	•	Backend (Python Flask): port 5000
 
-- Use AWS Console or Terraform to provision:
-  - OS: Ubuntu 22.04 LTS or Amazon Linux 2
-  - Instance type: t2.micro or t3.small
-  - Key pair: select or generate one
+⸻
 
----
+🔧 Step 1: Create Frontend and Backend Services
 
-## 🔑 Step 2: Connect Securely via SSH Key
+We’ll keep these services intentionally simple for now.
 
-```bash
-ssh-keygen -t rsa -b 4096 -C "you@example.com"
-#Use ssh-copy-id or manually copy public key:
-ssh ec2-user@<public-ip>  # AWS default user
-```
+🔹 Frontend Service (Node.js)
 
-## 👤 Step 3: Create a DevOps User for Platform Tasks
-```bash
-sudo adduser devops
-sudo usermod -aG sudo devops
+Create /opt/notestream/frontend/index.js:
 
-#Setup their SSH access:
-sudo mkdir /home/devops/.ssh
-sudo cp ~/.ssh/authorized_keys /home/devops/.ssh/
-sudo chown -R devops:devops /home/devops/.ssh
+const express = require('express');
+const app = express();
+const axios = require('axios');
+const PORT = 3000;
 
-```
+app.get('/', async (req, res) => {
+  try {
+    const backendRes = await axios.get('http://localhost:5000/data');
+    res.send(`Frontend connected to backend: ${backendRes.data}`);
+  } catch (err) {
+    res.status(500).send('Could not reach backend.');
+  }
+});
 
-## 🚫 Step 4: Harden the SSH Config
-```bash
-sudo nano /etc/ssh/sshd_config
-# Make these changes:
-PermitRootLogin no
-PasswordAuthentication no
-AllowUsers devops
+app.listen(PORT, () => console.log(`Frontend running on port ${PORT}`));
 
-# Then restart:
-sudo systemctl restart sshd
+Install dependencies and run:
 
-#Test ssh in a new terminal
-ssh -i your-key.pem devops@<public-ip>
+cd /opt/notestream/frontend
+npm init -y
+npm install express axios
+node index.js
 
-```
+Test in browser or with:
 
-## 🔐 Step 5: Install Basic Defense Tools
-```bash
-sudo apt update && sudo apt install ufw fail2ban -y
-sudo ufw allow OpenSSH
-sudo ufw enable
-sudo systemctl enable fail2ban
-```
+curl http://localhost:3000
 
-## 🧪 Step 6: Write a Health Script
-```bash
-#This script can be reused for alerting or pre-deploy checks:
-touch system-check.sh && chmod +x system-check.sh
-#Content:
-#!/bin/bash
-echo "=== SYSTEM CHECK ==="
-uptime
-df -h
-free -m
-last -a | head -5
 
-#run it
-./system-check.sh
-Later, we’ll run this via Ansible or CI runner
-```
+⸻
 
-## ✅ Outcome
-You’ve:
-    Created a secure DevOps user
-    Hardened SSH access
-    Installed essential security packages
-    Created your first health-check script
-    Prepared an EC2 instance for upcoming CI/CD and automation flows
+🔹 Backend Service (Python Flask)
 
-===================================================================
-# Guided Lab – Week 2: Secure EC2 for App Deployment
+Create /opt/notestream/backend/api.py:
 
----
+from flask import Flask
+app = Flask(__name__)
 
-## ☁️ Objective
+@app.route('/data')
+def data():
+    return "Secure data from backend service"
 
-Provision and harden an EC2 instance that will host your `backend-api` microservice in staging.
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000)
 
----
+Run:
 
-## 🧪 Step 1: Provision EC2 on AWS
+cd /opt/notestream/backend
+pip3 install flask
+python3 api.py
 
-- Ubuntu 22.04 or Amazon Linux 2
-- t2.micro or t3.small
-- Allow ports: 22 (SSH), 3000 (API), deny all others
+Test:
 
----
+curl http://localhost:5000/data
 
-## 🔐 Step 2: Create SSH Key Pair & Access Server
 
-```bash
-ssh-keygen -t rsa -b 4096 -C "you@example.com"
-ssh -i ~/.ssh/id_rsa ubuntu@<EC2_PUBLIC_IP>
-```
+⸻
 
----
+🔒 Step 2: Install and Configure UFW (Uncomplicated Firewall)
 
-## 👤 Step 3: Create `devops` User
+sudo apt update
+sudo apt install ufw -y
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
 
-```bash
-sudo adduser devops
-sudo usermod -aG sudo devops
-sudo mkdir -p /home/devops/.ssh
-sudo cp ~/.ssh/authorized_keys /home/devops/.ssh/
-sudo chown -R devops:devops /home/devops/.ssh
-```
+Open only frontend port:
 
----
-
-## 🔐 Step 4: Harden SSH
-
-```bash
-sudo nano /etc/ssh/sshd_config
-```
-
-Update:
-```
-PermitRootLogin no
-PasswordAuthentication no
-AllowUsers devops
-```
-
-Restart SSH:
-```bash
-sudo systemctl restart sshd
-```
-
----
-
-## 🧱 Step 5: Set Up Firewall & Fail2Ban
-
-```bash
-sudo apt update && sudo apt install ufw fail2ban -y
-sudo ufw allow 22/tcp
 sudo ufw allow 3000/tcp
 sudo ufw enable
-```
 
----
+Try accessing both services:
 
-## 🛠️ Step 6: Write Health Check Script
+curl http://localhost:3000      # ✅ should work
+curl http://localhost:5000      # ❌ should fail from outside the service
 
-Create `/opt/backend-api/health-check.sh`
 
-```bash
-#!/bin/bash
-echo "==== Health Check ===="
-uptime
-df -h
-free -m
-systemctl status backend-api.service
-```
+⸻
 
-```bash
-chmod +x /opt/backend-api/health-check.sh
-```
+🔁 Step 3: Verify Firewall Rules
 
----
+sudo ufw status numbered
+sudo ss -tuln
+sudo netstat -plnt
 
-## ✅ Outcome
+You should see:
+	•	Frontend port 3000 open
+	•	Backend port 5000 listening only on 127.0.0.1
+	•	Firewall blocking access to 5000 from external IPs
 
-- EC2 instance secured for staging use
-- `devops` user created for GitHub Actions or Ansible access
-- API service monitored via health script
+⸻
+
+🧪 Step 4: Simulate Attack Attempt
+
+Try scanning open ports:
+
+sudo apt install nmap -y
+nmap -sS localhost
+
+You should see only:
+
+PORT     STATE SERVICE
+3000/tcp open  ppp
+
+Backend port is now isolated from the outside world — but reachable from the frontend.
+
+⸻
+
+📋 Step 5: Document Network Policy
+
+Create network-policy.md:
+
+## Host-Level Network Policy
+
+- Frontend Service: exposed via port 3000 to the internet
+- Backend Service: not exposed externally (bound to 127.0.0.1)
+- Only frontend can communicate with backend over loopback
+- All other ports are firewalled by UFW
+
+## Future Enforcement Goals:
+- ECS Service Connect namespaces
+- K8s NetworkPolicies by pod label
+- Service-to-service TLS
+
+
+⸻
+
+✅ You’ve now implemented host-based microservice network segmentation — this is exactly how you’ll scale to container-level or VPC-level segmentation later.
