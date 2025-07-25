@@ -1,41 +1,88 @@
-# 📅 Week 3 — Version Control & Git Workflows
+📁 Week03/Overview.md – Secure Containerization & DevSecOps Docker Practices
 
-## 🎯 What You'll Learn
+⸻
 
-- Understand what version control is and why it’s crucial.
-- Master Git basics: init, clone, commit, push, pull.
-- Learn branching strategies for real teams (feature, hotfix, release).
-- Practice merge conflicts, rebasing, and safe rollbacks.
-- Use `.gitignore`, stashing, and tags for practical daily work.
-- Build habits for secure and clean commit histories.
+🧠 Module Theory: Why Container Security is a DevSecOps Priority
 
----
+Containers solve consistency and scalability — but they don’t automatically solve security.
 
-## 🔍 5W1H
+In DevSecOps, you must ensure that every image, container, and runtime process adheres to security best practices:
+	•	No root user inside containers
+	•	No leaked secrets in layers
+	•	Base images are minimal and patched
+	•	Containers follow least privilege principles
+	•	Images are scanned automatically in CI/CD
 
-- **Who**: Developers, DevOps, any engineer who writes scripts, configs, or IaC.
-- **What**: Version control keeps track of all your code and infra changes.
-- **When**: Every time you touch files you want to reuse, share, or deploy.
-- **Where**: Local dev machine and remote repos like GitHub, GitLab.
-- **Why**: Prevents losing work, enables collaboration, supports automation.
-- **How**: Use Git daily — commit often, branch smartly, and resolve conflicts safely.
+A vulnerable container is a portable backdoor.
 
----
+⸻
 
-## 🗝️ Analogy
+🎯 Objectives
 
-Think of Git like Google Docs version history for code —  
-- **Branches** are separate drafts you work on.  
-- **Commits** are snapshots you can roll back to.  
-- **Merges** are combining changes back to the main doc.  
-It lets teams collaborate without overwriting each other’s work.
+By the end of this module, you will:
 
----
+✅ Containerize both the frontend (Node.js) and backend (Python) services
+✅ Write secure, minimal Dockerfiles using best practices
+✅ Scan containers for CVEs and security misconfigurations
+✅ Inject environment variables securely (without secrets baked into images)
+✅ Apply Linux capabilities and runtime flags to reduce container privileges
+✅ Prepare both images for CI/CD deployment into ECS or Kubernetes
 
-## ✅ Outcomes
+⸻
 
-By the end of this week, you’ll:
-- Have a working local/remote Git repo.
-- Use feature branches and merge with confidence.
-- Resolve conflicts and understand rollback options.
-- Follow best practices for secure Git workflows.
+📦 Application Evolution
+
+We will:
+	•	Build two Docker images for your notestream project:
+	•	frontend: Node.js + Express
+	•	backend: Python + Flask
+	•	Harden both Dockerfiles:
+	•	Use official slim base images
+	•	Avoid root
+	•	Multi-stage builds (for Node.js)
+	•	Introduce container runtime security:
+	•	--read-only, --no-new-privileges, --cap-drop
+	•	Set up docker-compose for local orchestration
+	•	Introduce image scanning with Trivy or Grype
+
+This is the first step toward ECS and Kubernetes deployment (Weeks 5–6).
+
+⸻
+
+🔧 Tools & Technologies
+	•	Docker CLI & Docker Compose
+	•	Trivy – container vulnerability scanner
+	•	Grype – alternative CVE scanner
+	•	Dive – explore image layers
+	•	Container runtime flags: --user, --cap-drop, --read-only
+
+⸻
+
+🛡️ DevSecOps Concepts Introduced
+
+Concept	Role in DevSecOps
+Secure Dockerfiles	Prevent CVE propagation and root access inside containers
+Image scanning in CI/CD	Shift-left security feedback
+Secrets separation	Avoid hardcoded API keys, tokens
+Runtime hardening	Least privilege at container execution
+Supply chain security	Secure what you build and run
+
+
+⸻
+
+🔁 Dev → Sec → Ops Integration
+
+Stage	Activity
+Dev	Write secure Dockerfile, avoid root, inject configs via env vars
+Sec	Scan images for vulnerabilities, use Snyk/Trivy/Grype
+Ops	Enforce runtime restrictions, log activity, prepare for orchestrator
+
+
+⸻
+
+📁 Deliverables
+	•	Dockerfile.frontend and Dockerfile.backend
+	•	docker-compose.yml to orchestrate both
+	•	Trivy/Grype scan reports
+	•	Hardened docker run flags and documentation
+	•	container-policy.md describing runtime 
