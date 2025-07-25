@@ -85,4 +85,3 @@ Ops	Enforce runtime restrictions, log activity, prepare for orchestrator
 	•	docker-compose.yml to orchestrate both
 	•	Trivy/Grype scan reports
 	•	Hardened docker run flags and documentation
-	•	container-policy.md describing runtime posture
