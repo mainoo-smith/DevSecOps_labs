@@ -3,37 +3,59 @@ To use this repo, you can fork it, clone it, or create an issue from a PR.
 The project comes with scripts that can be run locally or on any VM.
 You can play around with the commands, break things, and fix them to reinforce learning.
 
-Curriculum structure:
+✅ Revised Course Plan (Integrated DevOps + DevSecOps Focus)
 
-  | Week      | Theme                                   | Includes (From All Sources)                                               |
-| --------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| **01**    | DevOps Mindset + Git                    | DevOps 5W1H, CI/CD overview, Git basics → GitFlow, GitHub actions trigger |
-| **02**    | Linux + SSH + Security                  | Users/groups, firewalls, SSH keys, OS hardening, patching                 |
-| **03**    | Bash + Python Scripting                 | Real-world automation: log rotation, alerts, deployer                     |
-| **04**    | CI/CD Concepts + GitHub Actions         | YAML pipelines, build/test/lint jobs, matrix builds                       |
-| **05**    | Jenkins & GitLab CI                     | Jenkinsfile, runners, agents, GitLab pipelines, secrets mgmt              |
-| **06**    | Docker & Best Practices                 | Image layers, multi-stage builds, `.dockerignore`, healthchecks           |
-| **07**    | Image Signing + Scanning                | Trivy, SBoMs, Notary, AWS ECR scanning, vulnerabilities                   |
-| **08**    | AWS ECR + Secure Push                   | OIDC auth in GitHub/GitLab/Jenkins, IRSA in EKS, lifecycle tags           |
-| **09**    | Config Management (Ansible)             | Inventories, playbooks, roles, templates, Jinja2                          |
-| **10**    | Advanced Ansible + Vault + Provisioning | Encrypted vars, provisioning EC2s, app install, Vault integration         |
-| **11**    | IaC with Terraform                      | State mgmt, backend config, VPC, EC2, S3, IAM                             |
-| **12**    | Advanced Terraform + EKS Setup          | EKS modules, node groups, IRSA, Helm provider                             |
-| **13**    | Kubernetes Intro (EKS)                  | Deployments, services, configmaps, volumes, autoscaling                   |
-| **14**    | Helm + Secrets + Ingress                | Helm templating, ingress-nginx, TLS via cert-manager, sealed-secrets      |
-| **15**    | GitOps (ArgoCD or FluxCD)               | Git as source of truth, drift detection, self-healing apps                |
-| **16**    | Observability I (Prometheus/Grafana)    | Metrics, dashboards, node\_exporter, alerts                               |
-| **17**    | Observability II (Loki, ELK)            | Logs, structured formats, log correlation, log retention                  |
-| **18**    | CI/CD on AWS (CodePipeline)             | CodeBuild, CodeDeploy, artifact mgmt, approval stages                     |
-| **19**    | Cloud Cost + Optimization               | Spot, reserved instances, cost explorer, AWS Budgets                      |
-| **20**    | Security: OPA + tfsec + Checkov + Falco | IaC policies, runtime protection, anomaly alerts                          |
-| **21**    | SRE: SLIs, SLOs, SLAs                   | Golden signals, alert fatigue, error budgets                              |
-| **22–24** | Capstone: DevSecOps Platform Build      | CI/CD → Secure Container → ECR → EKS → GitOps → Observability             |
+Week	Title	Focus Areas	DevSecOps Tie-In
+1	🔍 Linux & OS Fundamentals for DevSecOps	Shell, permissions, users, file structure, process management	OS hardening, secure permissions, attack surface
+2	🌐 Networking & Firewalls for DevSecOps	TCP/IP, ports, DNS, SSH, iptables, proxies	Network segmentation, firewall policies, lateral movement
+3	🧱 Containers, Docker & Image Basics	Docker CLI, layers, image building, volumes	Dockerfile security, attack vectors, minimal base images
+4	🧠 Git, GitHub, GitLab & Secure Git Workflows	Git internals, branching, signed commits, GitOps	Preventing supply chain attacks, SBOM integration
+5	⚙️ Scripting & Automation with Bash & Python	Bash loops, cron, Python scripts, automation jobs	Writing secure scripts, input validation, secrets handling
+6	🏗️ CI/CD Pipelines Part I – GitHub Actions & GitLab CI	Pipelines, jobs, runners, secrets, artifact management	Shift-left testing, secrets injection, SBOM publishing
+7	🏗️ CI/CD Pipelines Part II – AWS CodePipeline & CodeBuild	CodePipeline YAML, IAM roles, artifact stores	Secure build environments, CodeBuild OIDC
+8	🔐 Secrets Management with Vault, SOPS, Sealed Secrets	Encryption, secret rotation, key policies	Preventing leaks, centralizing secret lifecycle
+9	🐳 Container Image Security & SBOMs	Trivy, Grype, Syft, vulnerability scans	Supply chain integrity, CVE workflows
+10	🔍 IaC Fundamentals & Security (Terraform, CFN, SAM)	Resources, providers, tfstate, plan/apply	tfsec, drift detection, GitOps for infra
+11	🔧 Kubernetes Security I – Access, Policies, RBAC	Kubeconfig, RBAC, Roles, NetworkPolicies	Preventing privilege escalation, least privilege
+12	🔧 ECS & Fargate Security I – Service Connect & IAM	ECS Services, IAM roles, namespace policies	Service isolation, cross-env communication
+13	🧠 Policy as Code (OPA, Gatekeeper, Kyverno)	Rego, policies, admission controllers	Enforce org-wide security standards
+14	🛡️ Runtime Security with Falco, eBPF & Auditd	Process monitoring, file access, kernel hooks	Intrusion detection, anomaly alerting
+15	📡 Monitoring, Logging, Alerting	Prometheus, Loki, CloudWatch, GuardDuty	Security monitoring, log aggregation
+16	🔐 AppSec & OWASP for Node.js + Python	Threat modeling, validation, API testing	OWASP Top 10 coverage, JWT handling, rate limiting
+17	🔐 Zero Trust in ECS + Kubernetes	Env isolation, workload identity, network security	Implementing Zero Trust boundaries
+18	⚔️ Red Team vs Blue Team Scenarios	Simulated attacks, detection, forensics	Real-world incident response simulation
+19	🏗️ Capstone Project I – Secure Software Factory	CI/CD, scanning, secrets, SBOM, deploy	DevSecOps automation end-to-end
+20	📘 Capstone Project II – Review, Demo, Threat Modeling	Peer review, post-mortem, lessons learned	Reinforce learning, simulate interviews
 
 
-The project is divided into modules by week. Every week has an overview, guided labs, challenge lab, reflection, security considerations, and expected outcome.
-After completing each lab/task, you can create an issue and add it to the corresponding project to track your progress.
+⸻
 
-Enjoy!!!
+💡 Why This Matters
+
+We’ve now fully:
+	•	Respected the DevOps foundation (Linux, Git, networking, scripting)
+	•	Integrated DevSecOps theory into every topic
+	•	Preserved advanced security content (runtime, red team, supply chain)
+	•	Balanced concept + hands-on practice
+
+⸻
+
+✅ Updated DevSecOps Course Principles
+	1.	🔄 Project Lifecycle Driven
+	•	Every module will evolve the application and its supporting infrastructure.
+	•	Changes will simulate realistic product development cycles: feature expansion, security hardening, pipeline enhancements, and threat mitigation.
+	2.	📦 Full Application Evolution
+	•	Node.js frontend and Python backend/automation components evolve weekly.
+	•	Secure deployments to both ECS and Kubernetes, with growing complexity.
+	•	Infrastructure and IaC will evolve alongside (Terraform, CloudFormation, SAM).
+	3.	🔐 DevSecOps Responsibilities per Role
+	•	Hands-on role simulation: CI/CD engineer, cloud security engineer, runtime defender, policy enforcer, AppSec specialist.
+	•	Resume-ready ownership of real-world security controls.
+	4.	🎓 Capstone-Ready Outcome
+	•	At the end of 20 weeks, you’ll have:
+	•	A GitHub portfolio with full infra + app + security + monitoring setup.
+	•	Working CI/CD pipelines across GitLab, GitHub Actions, AWS CodePipeline.
+	•	SBOMs, signed commits, container scans, policy-as-code, runtime defenses.
+	•	A realistic reference architecture demonstrating end-to-end security across the SDLC.
 
 Inspired by TechWorld With Nana's DevOps Bootcamp Syllabus
