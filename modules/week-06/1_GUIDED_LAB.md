@@ -1,97 +1,244 @@
-# 🛠 Week 6 Guided Lab — Containers & Docker
-
-## 🔍 5W1H: Why This Lab?
-
-- **Who**: You, as the DevOps engineer preparing app containers for staging/prod.
-- **What**: Build, run, scan, and ship containers.
-- **When**: Every deploy cycle.
-- **Where**: Local dev → CI/CD → prod orchestrator.
-- **Why**: Portability, consistency, security.
-- **How**: Practice these steps.
+````markdown
+# 📁 Week06/GuidedLab.md
+## Title: Build Secure CI/CD for App + Infrastructure + Artifact Management
 
 ---
 
-## 📌 Prerequisites
-
-- Docker Desktop or Docker CLI installed.
-- Sample app build output (e.g., from Week 4).
+## 🧠 What You’ll Do
+* Set up secure GitHub Actions and GitLab pipelines
+* Automate secure deployment of:
+    * Python backend (as container)
+    * Node.js frontend (as container)
+    * ECS infra (via Terraform/CDK)
+* Add security gates:
+    * `checkov`, `trivy`, `gitleaks`, `cfn-lint`
+* Push signed & scanned images to AWS ECR
+* Implement OIDC for secretless AWS deploy
+* Use Git branches to promote between `dev` → `qa` → `stable` → `uat`
 
 ---
 
-## 1️⃣ Build a Basic Docker Image
+## 🧱 PART 1: Prep Your Repositories (Monorepo Setup)
 
-✅ Create `Dockerfile`:
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY . .
-RUN npm install
-CMD ["node", "index.js"]
+```bash
+repo/
+├── .github/workflows/        ← GitHub Actions (or .gitlab-ci.yml)
+├── infrastructure/
+│   ├── terraform/            ← ECS, VPC, ALB, etc.
+│   ├── cdk/
+│   └── sam/
+├── backend/                  ← Python Flask or FastAPI
+├── frontend/                 ← Node.js (e.g. Vite + React)
+└── scripts/ci/               ← Shared scan/publish scripts
+````
 
-✅ Build & run:
-docker build -t myapp:1.0 .
-docker run -p 3000:3000 myapp:1.0
+-----
 
-2️⃣ Advanced: Multi-Stage Build
-✅ Example for Java:
-# Stage 1: Builder
-FROM maven:3.9 AS builder
-WORKDIR /app
-COPY . .
-RUN mvn clean package
+## 🔐 PART 2: Secure GitHub → AWS OIDC Authentication
 
-# Stage 2: Runtime
-FROM openjdk:17-jdk-slim
-WORKDIR /app
-COPY --from=builder /app/target/app.jar /app/app.jar
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+### ✅ Why use OIDC?
 
-✅ Build & run:
-docker build -t myapp:2.0 .
-docker run -p 8080:8080 myapp:2.0
+  * No AWS access keys.
+  * No secret rotation.
+  * No storage of credentials.
+  * Only valid builds from your repo can assume roles.
 
-3️⃣ Docker Compose (Multi-Container Dev)
-✅ Create docker-compose.yml:
+### Step 1: Create OIDC IAM Role
 
-version: "3.9"
-services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypass
+```bash
+aws iam create-role --role-name GitHubDeployRole \
+  --assume-role-policy-document file://trust-policy.json
+```
 
-✅ Start:
-docker-compose up -d
-docker-compose ps
+**`trust-policy.json`:**
 
-4️⃣ Scan & Sign
-✅ Scan image for vulnerabilities:
-docker scan myapp:2.0
-# or use Trivy
-trivy image myapp:2.0
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::<account_id>:oidc-provider/token.actions.githubusercontent.com"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub": "repo:<owner>/<repo>:ref:refs/heads/dev"
+      }
+    }
+  }]}
+```
 
-✅ Sign image:
-cosign sign --key cosign.key myapp:2.0
+🎯 This allows only the `dev` branch in your repo to assume the role.
 
-✅ Verify:
-cosign verify --key cosign.pub myapp:2.0
+### Step 2: Attach Minimal Policies
 
-5️⃣ Push to Registry
-✅ Tag & push:
-docker tag myapp:2.0 yourdockerhub/myapp:2.0
-docker push yourdockerhub/myapp:2.0
+```bash
+aws iam attach-role-policy \
+  --role-name GitHubDeployRole \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
 
-✅ Use secrets properly:
-Never bake secrets in the image.
-Use env vars or secret managers at runtime.
+aws iam attach-role-policy \
+  --role-name GitHubDeployRole \
+  --policy-arn arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+```
 
-✅ Deliverables
-Dockerfile (multi-stage if possible)
-docker-compose.yml for local dev
-scan-results.md with vulnerabilities found
-Image pushed to your registry
+Later, use custom least-privilege roles per environment.
+
+-----
+
+## 🤖 PART 3: GitHub Actions CI/CD for Python + Node + Infra
+
+### 📦 Step 1: Secure CI for Backend
+
+Create `.github/workflows/backend.yml`
+
+```yaml
+name: Backend CI/CD
+on:
+  push:
+    branches: [dev, qa, stable, uat]
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to ECR
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build backend
+      run: |
+        docker build -t backend:${{ github.sha }} ./backend
+        docker tag backend:${{ github.sha }} ${{ secrets.ECR_REGISTRY }}/backend:${{ github.sha }}
+
+    - name: Trivy Image Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ secrets.ECR_REGISTRY }}/backend:${{ github.sha }}
+
+    - name: Push to ECR
+      run: docker push ${{ secrets.ECR_REGISTRY }}/backend:${{ github.sha }}
+
+    - name: Assume OIDC Role
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::<account>:role/GitHubDeployRole
+        aws-region: us-east-1
+```
+
+### 🧪 Step 2: Secure CI for Infra
+
+Add `.github/workflows/infra.yml`
+
+```yaml
+name: Terraform CI
+on:
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install tools
+      run: |
+        curl -sSL [https://install.terraform.io](https://install.terraform.io) | bash
+        pip install checkov
+    - name: Terraform Init & Plan
+      run: |
+        cd infrastructure/terraform
+        terraform init
+        terraform plan
+    - name: Checkov IaC Scan
+      run: checkov -d infrastructure/terraform
+```
+
+### 🔐 Step 3: Add Secrets Scan
+
+Add to all CI jobs:
+
+```yaml
+    - name: Secrets Scan
+      uses: zricethezav/gitleaks-action@v2
+```
+
+### 📤 Step 4: Promote Environments via Branches
+
+| Branch   | Auto Deploy? | Approval Needed?                           |
+| :------- | :----------- | :----------------------------------------- |
+| `dev`    | ✅ yes        | ❌ no                                      |
+| `qa`     | ✅ yes        | ✅ after SAST, IaC pass                    |
+| `stable` | ✅ yes        | ✅ with reviewer                           |
+| `uat`    | ✅ yes        | ✅ tagged artifact only                    |
+
+-----
+
+## 🛠️ PART 4: GitLab CI/CD Sample for Frontend
+
+Add `.gitlab-ci.yml`:
+
+```yaml
+stages:
+  - lint
+  - test
+  - build
+  - scan
+  - deploy
+
+lint:
+  stage: lint
+  script:
+    - npm install
+    - npm run lint
+
+test:
+  stage: test
+  script:
+    - npm test
+
+build:
+  stage: build
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA ./frontend
+    - docker push $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA
+
+scan:
+  stage: scan
+  script:
+    - trivy image $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA
+
+deploy:
+  stage: deploy
+  only:
+    - dev
+  script:
+    - aws ecs update-service --cluster dev-cluster --service frontend --force-new-deployment
+```
+
+🔐 Add secret variables (e.g., `AWS_ACCESS_KEY_ID`, `OIDC_ROLE`) in GitLab settings.
+
+-----
+
+## ✅ You’ve Now Covered:
+
+  * ✅ Secure builds for both backend & frontend
+  * ✅ Scan containers, IaC, and secrets in every pipeline
+  * ✅ Push only scanned artifacts to AWS ECR
+  * ✅ Promote between environments using Git branch control
+  * ✅ Deploy apps + infra securely without long-term secrets
+
+<!-- end list -->
+
+```
+```
