@@ -1,56 +1,94 @@
-# 📅 Week 5 — Cloud & Infrastructure Basics (Beginner → Advanced)
+📁 Week5/Overview.md
 
-## 🎯 What You'll Learn
+Title: ⚙️ Scripting & Automation with Bash & Python
+Focus: Automating DevSecOps workflows across environments securely and efficiently
 
-- Understand cloud fundamentals: IaaS, PaaS, SaaS, regions, AZs, pricing.
-- Launch and secure your first VM in the cloud (AWS EC2).
-- Master basics of networking: VPCs, subnets, route tables, security groups.
-- Apply IAM best practices: users, roles, policies, least privilege.
-- **Advanced**:
-  - Design multi-tier architectures (public/private subnets).
-  - Use Bastion hosts & jump boxes.
-  - Automate provisioning with launch templates and CLI tools.
-  - Start using Infrastructure as Code (Terraform intro).
-  - Plan for multi-cloud or disaster recovery basics.
-  - Apply tagging & cost management practices.
+⸻
 
----
+🧠 Conceptual Overview
 
-## 🔍 5W1H
+🔧 Why Scripting Matters in DevSecOps
 
-- **Who**: DevOps, Cloud Engineers, SREs, Security Engineers.
-- **What**: Provision, secure, and manage cloud compute/network resources.
-- **When**: Every time you deploy an app, scale, or patch infra.
-- **Where**: AWS, Azure, GCP — core concepts transfer across clouds.
-- **Why**: 90% of breaches come from misconfigured cloud infra.
-- **How**: Manual first → then automate.
+Scripting is the glue between infrastructure, CI/CD, security scanning, monitoring, and deployment. Whether you’re:
+	•	Automating a cloud backup
+	•	Generating a signed SBOM
+	•	Or sending audit logs to a compliance bucket
 
----
+…chances are, a script is behind it.
 
-## 🏗️ Real Project Context
+Scripting done right enables:
+	•	Repeatability & reliability
+	•	Secure execution of privileged tasks
+	•	Team-wide operational consistency
+	•	Lightweight automation without heavyweight pipelines
 
-You’re setting up **the cloud environment that will run your containerized microservices stack**.  
-- This week: Build your base VPC, EC2 instances, and secure SSH access.
-- Later: You’ll add containers, EKS, and CI/CD pipelines that deploy into this infra.
-- By the end: You’ll have reusable Terraform scripts to spin up prod/staging in minutes.
+⸻
 
----
+🐚 Bash vs 🐍 Python
 
-## 🗝️ Analogy
+Feature	Bash	Python
+Great for	Shell tasks, chaining commands, log rotation	Complex logic, API integrations, report generation
+Strengths	Native to UNIX, cron-friendly	Libraries (e.g. boto3, requests), readable
+Weaknesses	Harder to test/scale	Slower for one-liners
+DevSecOps Use	Glue scripts, log rotation, backups	Report generators, scanners, validations
 
-Think of your cloud infra like a **gated neighborhood**:
-- VPC = the neighborhood boundary  
-- Subnets = streets  
-- Security groups = fences around each house  
-- Bastion host = security guardhouse for visitors  
-- IAM = the master key system for who can unlock what.
+We’ll use both in this module — in the right places and with security in mind.
 
----
+⸻
 
-## ✅ Outcomes
+🔐 Security Risks in Scripting
 
-- Launch & secure your own cloud server.
-- Design a simple VPC with best practices.
-- Connect securely using SSH keys & Bastion host.
-- Apply least privilege IAM.
-- Prepare for infra automation in Week 6.
+Common mistakes we’ll avoid:
+	•	Hardcoding secrets
+	•	Unsafe input parsing ($1, eval, os.system())
+	•	Over-permissioned scripts (running as root)
+	•	Logging sensitive info
+	•	Shell injection ($(user_input))
+
+You’ll learn to:
+	•	Validate inputs
+	•	Sanitize environment variables
+	•	Use AWS SSM + .env for secure secrets loading
+	•	Log responsibly
+
+⸻
+
+🧩 Evolving the App
+
+This week we evolve the app with scripting:
+
+Task	Tool	Scripted With
+ECS service health check	AWS CLI	Bash
+Trivy vulnerability report → SBOM	Trivy JSON → HTML	Python
+Secrets fetch from SSM Parameter Store	AWS CLI + dotenv	Bash
+App deployment pre-check (ports, version)	Axios + shell test	Python
+Audit log archive to S3	AWS SDK	Python
+
+Each of these will be implemented as:
+	•	Standalone script (.sh or .py)
+	•	CI/CD job template (GitHub/GitLab)
+	•	Secure file (.env, IAM role, encrypted store)
+
+⸻
+
+🎯 DevSecOps Learning Objectives
+
+By the end of this module, you’ll be able to:
+
+✅ Write production-grade, reusable Bash and Python scripts
+✅ Integrate those scripts into pipelines and automated workflows
+✅ Use secure scripting practices (env vars, no hardcoding, input validation)
+✅ Handle secrets and sensitive data responsibly
+✅ Leverage automation in CI/CD, monitoring, backups, and reporting
+✅ Explain scripting’s role in incident response, compliance, and DevOps scaling
+
+⸻
+
+🛠️ Tools & Services Covered
+
+Tool	Use
+Bash, cron, set -euo pipefail	Safety-first Bash scripting
+Python 3.11+, argparse, os, json, boto3	CLI tools, AWS automation
+AWS CLI + SSM + IAM	Secure secret fetch and resource automation
+Trivy	SBOM generation for automation
+GitHub Actions + GitLab CI	Script integration into CI/CD
