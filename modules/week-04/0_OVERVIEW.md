@@ -1,52 +1,96 @@
-# 📅 Week 4 — Build & Package Management
-
-## 🎯 What You'll Learn
-
-- Core build concepts: compile, test, package.
-- Use Maven (Java), npm (Node.js), or Gradle to automate builds.
-- Push artifacts to a repository (Nexus, Artifactory, or AWS CodeArtifact).
-- **Advanced**:
-  - Multi-stage builds (Docker context)
-  - Build caching for faster pipelines
-  - Signed artifacts & promotion workflows
-  - Build scanning for supply chain security
+```markdown
+# 📁 Week04/Overview.md – Building Secure CI/CD Pipelines for Containers (GitLab, GitHub, CodePipeline)
 
 ---
 
-## 🔍 5W1H
+## 🧠 Module Theory: Why CI/CD is a DevSecOps Control Plane
 
-- **Who**: Developers, DevOps engineers, Release Managers.
-- **What**: Builds convert source to tested, versioned, shareable artifacts.
-- **When**: Every time you release or deploy.
-- **Where**: Local, CI/CD runners, containers.
-- **Why**: Reproducibility, rollback, collaboration.
-- **How**: Automate with build tools, sign artifacts, push to secure repos.
+In DevSecOps, **CI/CD pipelines** are more than automation scripts — they are **security policy enforcement engines**.
 
----
+A well-secured CI/CD pipeline:
 
-## 🗝️ Analogy
+* Prevents vulnerable or unsigned images from being deployed
+* Enforces linting, scanning, and policy checks before approval
+* Adds auditability to every release
+* Stops misconfigured infrastructure or container specs from reaching production
 
-A build tool is like a chef — you give raw ingredients (code) → chef follows a recipe → you get a repeatable dish (artifact).  
-A signed artifact is like a sealed food package: tamper-evident and trustworthy.
+Your CI/CD pipeline is your first and last line of defense before things go live.
 
 ---
 
-## 🏗️ Real Project Context
+## 🎯 Objectives
 
-**Scenario:**  
-You’re building a 3-tier microservice app:  
-- Backend API (Java or Node.js)
-- Frontend (React, npm)
-- All built, versioned, and pushed to Nexus.
+By the end of this module, you will:
 
-Your CI/CD pipeline will pull these signed artifacts to build Docker images in the next weeks.
+* ✅ Build automated pipelines for Docker-based microservices
+* ✅ Use **GitHub Actions** and **GitLab CI** to:
+    * Build and tag images
+    * Run Trivy/Grype scans
+    * Enforce signature and CVE thresholds
+    * Push to AWS ECR or GitLab Container Registry
+* ✅ Integrate **AWS CodePipeline** for secure release automation
+* ✅ Gate releases based on scan results and signature validation
 
 ---
 
-## ✅ Outcomes
+## 📦 Application Evolution
 
-By the end of this week:
-- Build, test, and package a real component of your microservice.
-- Push versioned artifacts to a repo.
-- Use checksums & signing for supply chain security.
-- Document build & promotion workflow for your pipeline.
+We'll build CI/CD workflows for both the frontend (Node.js) and backend (Python) services.
+
+Each will follow a secure pipeline that:
+
+* ✅ Lints the Dockerfile and code
+* ✅ Builds and tags a Docker image
+* ✅ Scans the image with Trivy
+* ✅ Signs the image with cosign
+* ✅ Pushes it to the container registry
+* ✅ Stores SBOM (Software Bill of Materials) as an artifact
+* ❌ Blocks deploy if any **CRITICAL CVEs** are detected or image is unsigned
+
+---
+
+## 🔧 Tools & Platforms
+
+| Platform                  | Role                                     |
+| :------------------------ | :--------------------------------------- |
+| **GitHub Actions** | For GitHub-hosted source code CI/CD      |
+| **GitLab CI/CD** | For GitLab-native end-to-end pipelines   |
+| **AWS CodePipeline** + CodeBuild | For release to AWS ECS securely          |
+| **Trivy, Grype** | For image and Dockerfile scanning        |
+| **cosign** | Image signing and verification           |
+| **Docker, docker-compose** | Local testing and build previews         |
+| **ECR, GitLab Container Registry** | Secure image storage                     |
+
+---
+
+## 🛡️ DevSecOps Concepts Introduced
+
+| Concept                    | Purpose                                                         |
+| :------------------------- | :-------------------------------------------------------------- |
+| **Secure Build Pipelines** | Prevent vulnerable images from being published                  |
+| **CVE Threshold Enforcement** | Block deploy if image is unsafe                                 |
+| **Image Signing** | Prevent tampered images in production                           |
+| **SBOM Generation** | Document image contents for audit/compliance                    |
+| **CI/CD Policy Shifting Left** | Make security a deploy-time gate, not an afterthought           |
+
+---
+
+## 🔁 Dev → Sec → Ops Integration
+
+| Stage | DevSecOps Practice                                    |
+| :---- | :---------------------------------------------------- |
+| **Dev** | Pushes code that triggers pipeline                    |
+| **Sec** | Pipeline scans image, checks Dockerfile, verifies signatures |
+| **Ops** | Pulls only verified images to deploy, based on branch or tag |
+
+---
+
+## 📁 Deliverables
+
+* `.gitlab-ci.yml` and `.github/workflows/docker-secure.yml`
+* Trivy scan results as artifacts
+* SBOM file (CycloneDX or Syft format)
+* Cosign signature and verification step
+* AWS ECR login + push steps
+* Conditional deploy logic (if scan passes and image is signed)
+```

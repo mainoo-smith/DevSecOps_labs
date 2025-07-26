@@ -1,100 +1,189 @@
-# 🛠 Week 4 Guided Lab — Building & Pushing Artifacts (Advanced)
-
-## 🔍 5W1H: Why This Lab?
-
-- **Who**: Acting as a DevOps engineer on a real microservices team.
-- **What**: Automate builds, ensure reproducibility, and secure supply chain.
-- **When**: Every build you intend to ship to staging/production.
-- **Where**: Local → CI/CD → Artifact Repo.
-- **Why**: Reliable, repeatable builds protect against “it works on my machine”.
-- **How**: Build, test, sign, multi-stage Docker build, and push.
+```markdown
+# 📁 Week04/GuidedLab.md – Secure Container CI/CD Pipelines (GitLab, GitHub, AWS)
 
 ---
 
-## 📌 Prerequisites
+## 🧠 Objective
 
-- Maven or npm installed.
-- Docker installed for multi-stage build.
-- Local Nexus/Artifactory or cloud artifact repo access.
+You’ll build two CI/CD pipelines (GitHub Actions & GitLab CI) to:
 
----
+* ✅ Build hardened Docker images
+* ✅ Scan them for vulnerabilities (Trivy)
+* ✅ Sign them with cosign
+* ✅ Push them to a secure registry (GitHub Container Registry or GitLab Registry)
+* ✅ Gate deployment using security checks
 
-## 1️⃣ Standard Build & Push
-
-✅ **Basic**:
-- Use Maven to compile & package a simple Java API.
-- Or npm to build a simple Node.js/React frontend.
-
-✅ **Push**:
-- Use Nexus CLI or curl to upload `.jar` or `.tgz`.
+You’ll also preview integration with AWS CodePipeline (coming up in Challenge Lab & Week 5).
 
 ---
 
-## 2️⃣ Advanced: Multi-Stage Build (Docker)
+## 🧱 Project Structure Reminder
 
-- Write a `Dockerfile` that uses a builder image, then copies final output.
-
-```dockerfile
-# Stage 1: Builder
-FROM maven:3.9 AS builder
-WORKDIR /app
-COPY . .
-RUN mvn clean package
-
-# Stage 2: Runtime
-FROM openjdk:17-jdk-slim
-WORKDIR /app
-COPY --from=builder /app/target/app.jar /app/app.jar
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 ```
 
-✅ Build the image:
-```bash
-docker build -t myapp:1.0 .
+notestream/
+├── frontend/
+│   ├── Dockerfile
+│   └── index.js
+├── backend/
+│   ├── Dockerfile
+│   └── app.py
+├── .github/
+│   └── workflows/
+│       └── docker-secure.yml   👈 GitHub Actions
+├── .gitlab-ci.yml              👈 GitLab CI/CD
+
+````
+
+---
+
+## 🔐 Pre-Setup: Secrets
+
+For both pipelines, set these secrets:
+
+| Key             | Value                                 | Where                 |
+| :-------------- | :------------------------------------ | :-------------------- |
+| `REGISTRY_USER` | GitHub/GitLab username or AWS IAM user | GitHub/GitLab/AWS     |
+| `REGISTRY_TOKEN` | PAT, GitLab token, or AWS secret      | GitHub/GitLab/AWS     |
+| `COSIGN_PASSWORD` | Password for `cosign.key`             | GitHub/GitLab         |
+
+---
+
+## 🔁 GitHub Actions CI/CD
+
+### 📄 `.github/workflows/docker-secure.yml`
+
+```yaml
+name: Secure Docker CI/CD
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-scan-sign-push:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/backend
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GHCR
+      run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u ${{ secrets.REGISTRY_USER }} --password-stdin
+
+    - name: Build Docker Image
+      run: |
+        docker build -t $IMAGE_NAME:latest ./backend
+
+    - name: Scan with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.IMAGE_NAME }}:latest
+        format: table
+        exit-code: 1
+        severity: CRITICAL,HIGH
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3
+
+    - name: Sign Image
+      run: |
+        echo "${{ secrets.COSIGN_PASSWORD }}" | cosign sign --key cosign.key $IMAGE_NAME:latest
+
+    - name: Push Image
+      run: docker push $IMAGE_NAME:latest
+````
+
+✅ This pipeline:
+
+  * Blocks pushes with critical/high CVEs
+  * Signs the image before pushing
+  * Uses GitHub Container Registry (you can switch to ECR later)
+
+-----
+
+## 🦊 GitLab CI/CD
+
+### 📄 `.gitlab-ci.yml`
+
+```yaml
+stages:
+  - build
+  - scan
+  - sign
+  - push
+
+variables:
+  IMAGE_NAME: [registry.gitlab.com/$CI_PROJECT_PATH/backend](https://registry.gitlab.com/$CI_PROJECT_PATH/backend)
+
+before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
+build:
+  stage: build
+  script:
+    - docker build -t $IMAGE_NAME:latest ./backend
+
+scan:
+  stage: scan
+  image: aquasec/trivy:latest
+  script:
+    - trivy image --exit-code 1 --severity CRITICAL,HIGH $IMAGE_NAME:latest
+
+sign:
+  stage: sign
+  image: ghcr.io/sigstore/cosign
+  script:
+    - echo "$COSIGN_PASSWORD" | cosign sign --key cosign.key $IMAGE_NAME:latest
+
+push:
+  stage: push
+  script:
+    - docker push $IMAGE_NAME:latest
 ```
 
----
+✅ Same pipeline stages, but runs natively in GitLab. Can be extended with:
 
-## 3️⃣ Signed Artifacts & Checksums
+  * Dependency scanning
+  * SBOM artifact upload
+  * Release tagging
 
-- Sign your Maven artifacts with GPG.
-- Verify integrity:
-```bash
-sha256sum target/app.jar
+-----
+
+## 🛠️ Bonus: SBOM Generation (Optional)
+
+Add this to either pipeline:
+
+```yaml
+- name: Generate SBOM with Syft
+  uses: anchore/sbom-action@v0
+  with:
+    image: $IMAGE_NAME:latest
 ```
 
-- Store checksums in your repo: `checksums.txt`.
+-----
 
----
+## 📦 Registry Options
 
-## 4️⃣ Promotion Workflow
+| Option                        | Pros                                                                    |
+| :---------------------------- | :---------------------------------------------------------------------- |
+| **GitHub Container Registry** | Native to GitHub, supports private repos, cosign-compatible             |
+| **GitLab Container Registry** | Integrated with GitLab runners, fine-grained permissions                |
+| **AWS ECR (coming next)** | Secure IAM-based access, ECS integration, lifecycle rules               |
 
-- Document how you promote artifacts from dev → staging → prod without rebuilding.
-- Use Nexus Staging and `build-notes.md` to outline your process.
+-----
 
----
+## ✅ What You Now Have
 
-## 5️⃣ Build Caching
+  * A fully automated, security-gated CI/CD pipeline
+  * Automatic image scanning, signing, and pushing
+  * Secure image delivery for container orchestrators
 
-- Test with local Maven `.m2` cache vs. cold build.
-- Document speed difference in `week4/cache-results.md`.
+<!-- end list -->
 
----
-
-## ✅ Deliverables
-
-- Signed, versioned artifact pushed to Nexus.
-- Multi-stage Dockerfile in your repo.
-- `build-notes.md` with signing & checksum details.
-- Promotion workflow documented.
-
----
-
-## 🗝️ Real Project Context
-
-This artifact will be pulled by your CI/CD pipeline in Week 5–7 to build containers and deploy to your Kubernetes cluster.  
-A broken or unsigned artifact here could compromise your whole supply chain.
-
-## Analogy
-
-Think of your build process like a secured kitchen with a chef who labels, seals, and logs every dish before it goes out for delivery.
+```
+```
