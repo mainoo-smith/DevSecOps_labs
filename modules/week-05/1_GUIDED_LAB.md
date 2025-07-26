@@ -1,101 +1,187 @@
-# 🛠 Week 5 Guided Lab — Build & Secure Cloud Infra (Beginner → Advanced)
+📁 Week5/GuidedLab.md
 
-## 🔍 5W1H: Why This Lab?
+Title: Secure Scripting: Bash & Python Automation for Cloud, CI/CD & Compliance
 
-- **Who**: You, acting as the DevOps/Cloud Engineer.
-- **What**: Practice real cloud provisioning — manual first, then plan for automation.
-- **When**: Every environment (dev/staging/prod) starts here.
-- **Where**: AWS (but skills apply to any cloud).
-- **Why**: 70% of cloud breaches = misconfigured infra.
-- **How**: Secure-by-design workflow.
+⸻
 
----
+🧪 Scenario
 
-## 📌 Prerequisites
+You’ve been asked to:
+	•	Monitor the health of your ECS services
+	•	Generate SBOM reports from vulnerability scans
+	•	Fetch secrets from AWS SSM Parameter Store
+	•	Log archive and cleanup routines
 
-- AWS Free Tier account.
-- SSH key pair.
+You’ll build Bash and Python scripts that run locally and in CI/CD — with secure handling of secrets, inputs, logs, and IAM.
 
----
+⸻
 
-## 1️⃣ Create a Custom VPC
+🧱 Project Structure
 
-✅ Basic: Use default VPC (beginner)  
-✅ Advanced: Create custom VPC.
-- CIDR: 10.0.0.0/16
-- Public subnet: 10.0.1.0/24
-- Private subnet: 10.0.2.0/24
-- Internet Gateway & Route Table for public subnet.
+We’ll add this to your app repo:
 
----
+scripts/
+├── health/
+│   └── check_ecs_health.sh
+├── sbom/
+│   └── trivy_to_html.py
+├── secrets/
+│   └── fetch_secrets.sh
+├── logs/
+│   └── archive_logs.py
+.env.example
 
-## 2️⃣ Launch an EC2 Instance
+You’ll also prepare scripts/ci/ for jobs that can run in GitHub Actions or GitLab CI.
 
-- AMI: Ubuntu 22.04
-- Type: t2.micro (Free Tier)
-- Key pair: your SSH key
-- Security Group: allow SSH (port 22) from your IP only.
+⸻
 
-✅ Advanced: Launch a Bastion host in the public subnet.
+🐚 Part 1: Bash Script – ECS Service Health Check
 
----
+🔹 Step 1.1: check_ecs_health.sh
 
-## 3️⃣ SSH in Securely
+#!/bin/bash
+set -euo pipefail
 
-```bash
-ssh -i mykey.pem ubuntu@your-ec2-ip
-```
+CLUSTER_NAME="${1:-}"
+SERVICE_NAME="${2:-}"
 
-✅ Create a non-root user:
-```bash
-sudo adduser devopsstudent
-sudo usermod -aG sudo devopsstudent
-```
+if [[ -z "$CLUSTER_NAME" || -z "$SERVICE_NAME" ]]; then
+  echo "Usage: $0 <cluster-name> <service-name>"
+  exit 1
+fi
 
-✅ Set up SSH keys for new user.
+STATUS=$(aws ecs describe-services \
+  --cluster "$CLUSTER_NAME" \
+  --services "$SERVICE_NAME" \
+  --query "services[0].deployments[?status=='PRIMARY'].rolloutState" \
+  --output text)
 
-✅ Disable root SSH:
-```bash
-sudo nano /etc/ssh/sshd_config
-PermitRootLogin no
-```
+if [[ "$STATUS" == "COMPLETED" ]]; then
+  echo "✅ $SERVICE_NAME is healthy in $CLUSTER_NAME"
+else
+  echo "❌ $SERVICE_NAME is not fully deployed. Status: $STATUS"
+  exit 2
+fi
 
-✅ Change default SSH port (optional advanced).
+✅ Security Practices:
+	•	set -euo pipefail → fail fast
+	•	Validates arguments
+	•	Doesn’t log secrets or tokens
 
----
+🔹 Step 1.2: Run locally
 
-## 4️⃣ IAM Roles & Policies
+chmod +x scripts/health/check_ecs_health.sh
+./scripts/health/check_ecs_health.sh notes-cluster notes-service
 
-- Create IAM user for yourself with MFA.
-- Create IAM role with least privilege.
-- Attach the role to your EC2 for SSM Session Manager access.
 
----
+⸻
 
-## 5️⃣ Advanced: Bastion & Private Instances
+🐍 Part 2: Python Script – SBOM Formatter
 
-- Deploy app servers in private subnet.
-- SSH → Bastion → Private instance only.
-- Try using `ProxyJump` with SSH.
+🔹 Step 2.1: Install Trivy and generate SBOM
 
----
+trivy image --format cyclonedx --output results.json yourapp:latest
 
-## 6️⃣ Intro to IaC (Terraform Starter)
+🔹 Step 2.2: trivy_to_html.py
 
-✅ Generate Terraform:
-- Create `main.tf` to spin up the same VPC + EC2.
-- Validate & apply.
+import json, sys
+from pathlib import Path
 
----
+def generate_html(input_file: str):
+    data = json.loads(Path(input_file).read_text())
 
-## ✅ Deliverables
+    html = "<html><body><h1>SBOM Vulnerabilities</h1><ul>"
+    for component in data.get("components", []):
+        name = component.get("name", "unknown")
+        version = component.get("version", "unknown")
+        html += f"<li>{name} – {version}</li>"
+    html += "</ul></body></html>"
 
-- `cloud-notes.md` describing VPC, subnet, security group setup.
-- Screenshot of SSH access.
-- `main.tf` for Terraform if you try it.
+    output_file = input_file.replace(".json", ".html")
+    Path(output_file).write_text(html)
+    print(f"✅ SBOM report saved to {output_file}")
 
----
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python trivy_to_html.py results.json")
+        sys.exit(1)
+    generate_html(sys.argv[1])
 
-## 🏗️ Real Project Context
+✅ Security Practices:
+	•	No eval(), no shell injection
+	•	Validates file input
 
-This VPC & EC2 setup will host your CI/CD runners, containers, and app nodes in later weeks.
+python scripts/sbom/trivy_to_html.py results.json
+
+
+⸻
+
+🔐 Part 3: Bash – Secure Secrets Fetch from AWS SSM
+
+🔹 Step 3.1: fetch_secrets.sh
+
+#!/bin/bash
+set -euo pipefail
+
+SECRETS=("DB_PASSWORD" "API_KEY")
+
+for secret in "${SECRETS[@]}"; do
+  VALUE=$(aws ssm get-parameter \
+    --name "/devsecops/${secret}" \
+    --with-decryption \
+    --query "Parameter.Value" \
+    --output text)
+  echo "export $secret='$VALUE'" >> .env
+done
+
+echo "✅ Secrets loaded into .env"
+
+✅ Fetches encrypted parameters securely
+✅ IAM permissions required: ssm:GetParameter, kms:Decrypt
+
+⸻
+
+☁️ Part 4: Python – Archive Logs to S3
+
+import boto3, datetime, gzip, shutil
+from pathlib import Path
+
+logs_dir = Path("/var/log/myapp")
+bucket = "devsecops-log-archive"
+date = datetime.datetime.now().strftime("%Y-%m-%d")
+
+session = boto3.Session()
+s3 = session.client("s3")
+
+for log_file in logs_dir.glob("*.log"):
+    compressed = log_file.with_suffix(".gz")
+    with open(log_file, 'rb') as f_in, gzip.open(compressed, 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+
+    s3_key = f"logs/{date}/{compressed.name}"
+    s3.upload_file(str(compressed), bucket, s3_key)
+    print(f"✅ Uploaded {compressed.name} to s3://{bucket}/{s3_key}")
+
+✅ Handles log rotation
+✅ Compresses locally, uploads securely with Boto3
+✅ Avoids uploading raw secrets
+
+⸻
+
+🧪 Bonus: CI/CD Integration
+
+GitHub Actions example:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: bash scripts/health/check_ecs_health.sh notes-cluster notes-service
+
+Secrets fetch before pipeline step:
+
+      - name: Load Secrets
+        run: bash scripts/secrets/fetch_secrets.sh
+
+✅ Your scripts are now portable, secure, and CI-ready.
