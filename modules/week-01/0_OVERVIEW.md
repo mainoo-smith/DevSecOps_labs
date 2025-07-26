@@ -1,20 +1,3 @@
-Excellent — we’ll proceed with Option 1: Secure Note/Task Manager App as the foundation. It will evolve into multiple microservices (Auth, Notes, Notifications, Audit Logging, Week 1 – Linux & OS Fundamentals for DevSecOps
-
-This module will:
-	•	Set up the first VM or containerized environment for local dev and remote deployment
-	•	Create a Linux user, secure directory, and SSH setup
-	•	Secure file access and understand UIDs, GIDs, permissions, sudo, root security
-	•	Establish early DevSecOps habits like logging, auditing, and minimal privilege
-
-I’ll now generate the following files and paste them directly into the chat:
-	•	Week01/Overview.md
-	•	Week01/GuidedLab.md
-	•	Week01/ChallengeLab.md
-	•	Week01/Security.md
-	•	Week01/Reflection.md
-
-Starting now with Overview.md…
-
 📁 Week01/Overview.md – Linux & OS Fundamentals for DevSecOps
 
 ⸻
@@ -90,5 +73,3 @@ OS Hardening	Disabling unnecessary features or access paths
 	•	Week01/ChallengeLab.md: You’ll simulate a multi-user system and secure it
 	•	Week01/Security.md: Discuss common misconfigurations and tools like Lynis
 	•	Week01/Reflection.md: Deep questions + preparation for Week 2 (networking)
-
-Let me know if you’d like me to proceed with GuidedLab.md right away.
