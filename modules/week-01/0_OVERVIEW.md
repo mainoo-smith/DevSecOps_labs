@@ -50,11 +50,15 @@ As the app evolves, this VM/instance will:
 🛡️ DevSecOps Concepts Introduced
 
 Concept	Relevance
-Principle of Least Privilege	Preventing unauthorized access to files and commands
-User and Group Segmentation	Isolating services and users
+Principle of Least Privilege	
+Preventing unauthorized access to files and commands
+User and Group Segmentation	
+Isolating services and users
 Secure Defaults	File system and SSH security
-Auditing and Logging	Tracking what happened and when
-OS Hardening	Disabling unnecessary features or access paths
+Auditing and Logging	
+Tracking what happened and when
+OS Hardening	
+Disabling unnecessary features or access paths
 
 
 ⸻

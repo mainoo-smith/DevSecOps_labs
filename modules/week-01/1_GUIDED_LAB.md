@@ -25,15 +25,17 @@ Set up and harden a Linux virtual machine (VM) or EC2 instance that will serve a
 🔒 We’ll avoid using root for any DevOps activity.
 Instead, we create devsecops as a non-root user with least privilege.
 
+```bash 
 sudo adduser devsecops
 
-Follow the prompts. Choose a strong password and secure shell.
+# Follow the prompts. Choose a strong password and secure shell.
 
 # Add user to sudo (but we will restrict later)
 sudo usermod -aG sudo devsecops
 
 # Confirm
 id devsecops
+```
 
 
 ⸻
@@ -41,13 +43,13 @@ id devsecops
 2. 📂 Prepare Directory Structure for App Deployment
 
 We’ll begin preparing folders for our monorepo/microservices.
-
+```bash
 sudo mkdir -p /opt/notestream/{frontend,backend,automation,infra}
 sudo chown -R devsecops:devsecops /opt/notestream
 sudo chmod -R 750 /opt/notestream
 
-	•	750 means: Owner can read/write/execute, group can read/execute, others have no access.
-
+	# 750 means: Owner can read/write/execute, group can read/execute, others have no access.
+```
 ⸻
 
 3. 🔐 Lock Down SSH Access
@@ -57,7 +59,7 @@ SSH is a primary attack vector. Harden it immediately.
 ✅ 3.1 Disable root SSH login
 
 Edit /etc/ssh/sshd_config:
-
+```bash
 sudo nano /etc/ssh/sshd_config
 
 Update or add the following lines:
@@ -68,26 +70,27 @@ AllowUsers devsecops
 
 Then reload the SSH daemon:
 
-sudo systemctl reload sshd
+sudo systemctl reload sshd | sudo systemctl ssh (ubuntu) - sudo systemctl daemon-reload
+```
 
 ✅ 3.2 Add Public Key for devsecops
 
 Log in as devsecops and create .ssh directory:
-
+```bash
 su - devsecops
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 
-Paste your public key into ~/.ssh/authorized_keys:
+# Paste your public key into ~/.ssh/authorized_keys:
 
 nano ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
-
+```
 
 ⸻
 
 4. 🧼 Remove Unnecessary Packages and Services
-
+```bash
 # List active services
 sudo systemctl list-units --type=service --state=running
 
@@ -97,7 +100,7 @@ sudo systemctl disable bluetooth.service
 
 # Autoremove junk
 sudo apt autoremove -y
-
+```
 
 ⸻
 

@@ -23,6 +23,7 @@ You’ve been asked to prepare a Linux server where:
 
 🧱 Step 1: Create Role-Based Users and Groups
 
+```bash
 # Create groups for each role
 sudo groupadd devops
 sudo groupadd app
@@ -37,7 +38,7 @@ sudo useradd -m -s /bin/bash -G auditors auditor_user
 sudo passwd devops_user
 sudo passwd app_user
 sudo passwd auditor_user
-
+```
 
 ⸻
 
