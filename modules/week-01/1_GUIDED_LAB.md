@@ -82,6 +82,7 @@ mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 
 # Paste your public key into ~/.ssh/authorized_keys:
+ssh-keygen -y -f /path/to/your/aws-key-pair.pem #To generate the public key
 
 nano ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
@@ -105,8 +106,9 @@ sudo apt autoremove -y
 ⸻
 
 5. 🔎 Inspect Running Processes
-
+```bash
 ps aux --sort=-%mem | head -n 15
+```
 
 Understand which processes are consuming resources. You’ll use this later to detect anomalies (Week 14).
 
@@ -115,12 +117,13 @@ Understand which processes are consuming resources. You’ll use this later to d
 6. 🔍 Install Audit Tools
 
 # System auditing
+```bash
 sudo apt update
 sudo apt install auditd lynis -y
 
 # Run baseline audit
 sudo lynis audit system
-
+```
 
 ⸻
 
@@ -138,10 +141,10 @@ Basic audit tools installed	✅
 ⸻
 
 🧪 Run: First Security Scan
-
+```bash
 sudo lynis audit system > ~/lynis_report.txt
 less ~/lynis_report.txt
-
+```
 Save this report. You’ll compare it against future hardened states in Week 8 and Week 14.
 
 ⸻

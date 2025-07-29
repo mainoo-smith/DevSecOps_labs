@@ -31,6 +31,9 @@ sudo groupadd auditors
 
 # Create users and assign them
 sudo useradd -m -s /bin/bash -G devops devops_user
+# -m creates the users home directory if not already exists
+# -s creates a shell for the user when logged in. In this case bash shell
+# -G is the group to assing the user
 sudo useradd -m -s /bin/bash -G app app_user
 sudo useradd -m -s /bin/bash -G auditors auditor_user
 
@@ -45,28 +48,65 @@ sudo passwd auditor_user
 🗄️ Step 2: Prepare App Directory Access Control
 
 Create application directories and apply strict permissions.
-
+```bash
 sudo mkdir -p /opt/notestream/{frontend,backend,logs}
 
 # Set group ownership
 sudo chown -R app_user:app /opt/notestream/{frontend,backend}
-sudo chown -R root:auditors /opt/notestream/logs
+sudo chown -R auditor_user:auditors /opt/notestream/logs
 
 # Set permissions
 sudo chmod -R 750 /opt/notestream/{frontend,backend}
 sudo chmod -R 740 /opt/notestream/logs
 
+# The numbers 750 and 740 are octal representations of permission sets for different types of users:
+
+#Owner (U): The user who owns the file or directory.
+
+#Group (G): Users who are members of the file's or directory's group.
+
+#Others (O): All other users on the system who are not the owner or in the group.
+
+# Each digit in the octal number corresponds to the permissions for one of these categories (Owner, Group, Others), in that specific order.
+
+# The numerical values for permissions are:
+
+# 4: Read (r)
+
+# 2: Write (w)
+
+# 1: Execute (x)
+
+# 0: No permissions (-)
+
+# You combine these numbers to get the desired permission set:
+
+# Read + Write + Execute = 4 + 2 + 1 = 7
+
+# Read + Write = 4 + 2 = 6
+
+# Read + Execute = 4 + 1 = 5
+
+# Read Only = 4
+
+# Write Only = 2
+
+# Execute Only = 1
+
+# No Permissions = 0
+
+```
 Now:
 	•	app_user can deploy/run apps
 	•	devops_user cannot touch app runtime
 	•	auditor_user can only read logs
 
 Test this by switching users:
-
+```bash
 su - auditor_user
 ls /opt/notestream/backend         # should fail
 ls /opt/notestream/logs            # should succeed
-
+```
 
 ⸻
 
@@ -74,6 +114,7 @@ ls /opt/notestream/logs            # should succeed
 
 Lock down sudo permissions so only devops_user has elevated rights:
 
+```bash
 sudo usermod -G sudo devops_user
 sudo deluser app_user sudo
 sudo deluser auditor_user sudo
@@ -85,7 +126,7 @@ sudo visudo -f /etc/sudoers.d/devsecops-policy
 Add:
 
 devops_user ALL=(ALL) NOPASSWD: /bin/systemctl, /usr/bin/docker
-
+```
 This limits devops_user to only control services or containers — not unrestricted sudo.
 
 ⸻
