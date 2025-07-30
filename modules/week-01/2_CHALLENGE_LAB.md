@@ -115,14 +115,37 @@ ls /opt/notestream/logs            # should succeed
 Lock down sudo permissions so only devops_user has elevated rights:
 
 ```bash
-sudo usermod -G sudo devops_user
-sudo deluser app_user sudo
-sudo deluser auditor_user sudo
+sudo usermod -G sudo devops_user #adds <user> to sudo group
+sudo deluser app_user sudo # removes a <user> from <group>
+sudo deluser auditor_user sudo # removes a <user> from <group>
 
-Edit /etc/sudoers.d/devsecops-policy:
+# sudo visudo: visudo is the recommended and safe way to edit the sudoers file. It opens the file in a text editor (like vi or nano), checks the syntax for errors when you save, and prevents you from saving a broken configuration that could lock you out of sudo.
+
+# -f: This flag allows you to specify a different file to edit, rather than the default /etc/sudoers.
+
+# /etc/sudoers.d/devsecops-policy: This is the path to the new file you are creating or editing. It's a best practice to put custom sudo rules in the /etc/sudoers.d/ directory so they are separate from the main /etc/sudoers file and easier to manage.
+
+# The sudoers File Content
+# devops_user ALL=(ALL) NOPASSWD: /bin/systemctl, /usr/bin/docker
+
+# This line is a specific sudo policy for devops_user. Let's break down its syntax:
+
+# devops_user: The user account this policy applies to.
+
+# ALL=: This specifies the host(s) that this rule applies to. ALL means any host.
+
+# (ALL): This specifies the user(s) that devops_user can run commands as. (ALL) means devops_user can use sudo to run commands as any user (including root).
+
+# NOPASSWD:: This is a key part. It means that devops_user will not be prompted for a password when running the commands that follow this keyword.
+
+# /bin/systemctl, /usr/bin/docker: This is a comma-separated list of the commands that devops_user can run with sudo and without a password.
+
+# /bin/systemctl: A common command used for managing system services.
+
+# /usr/bin/docker: The main Docker command.
 
 sudo visudo -f /etc/sudoers.d/devsecops-policy
-
+sudo visudo -f /etc/sudoers.d/devsecops-policy
 Add:
 
 devops_user ALL=(ALL) NOPASSWD: /bin/systemctl, /usr/bin/docker
@@ -134,18 +157,69 @@ This limits devops_user to only control services or containers — not unrestric
 📋 Step 4: Setup Audit Logging for All Users
 
 Ensure command logging is enabled system-wide:
-
-Edit /etc/bash.bashrc and append:
+```bash
+# Edit /etc/bash.bashrc and append:
+vim /etc/bash.bashrc # and append:
 
 export PROMPT_COMMAND='RETRN_VAL=$?;logger -p local1.notice -t bash[$$] "$(whoami) [$$]: $(history 1 | sed "s/^[ ]*[0-9]\+[ ]*//")"'
 
-Then configure rsyslog to write local1 logs to a secure file:
+# Then configure rsyslog to write local1 logs to a secure file:
 
 echo 'local1.*    /var/log/command_audit.log' | sudo tee /etc/rsyslog.d/90-audit.conf
-sudo systemctl restart rsyslog
-
+sudo systemctl daemon-reload
+```
 Now, all terminal commands will be logged per user.
 
+Command explanation
+```bash
+This is a security measure used to audit user activity on a Linux system. It's a common practice for systems that require strict logging and compliance.
+
+Let's break down exactly what each part of this configuration does.
+
+### 1. Editing `/etc/bash.bashrc`
+
+`export PROMPT_COMMAND='RETRN_VAL=$?;logger -p local1.notice -t bash[$$] "$(whoami) [$$]: $(history 1 | sed "s/^[ ]*[0-9]\+[ ]*//")"'`
+
+# This is the core of the command auditing. It's a powerful and clever way to log every command executed in a Bash shell.
+
+* **`export PROMPT_COMMAND='...'`**: `PROMPT_COMMAND` is a special Bash shell variable. When it's set, its value is executed as a command *just before* the primary prompt (`$PS1`) is displayed. By setting this, you ensure that the command inside the quotes runs every single time the shell is ready to accept a new command.
+* **`RETRN_VAL=$?`**: The `$?` variable holds the exit status of the most recently executed foreground command. A value of `0` typically indicates success, while any other value indicates an error. This part captures that value, though it's not explicitly used in the logging command provided. It's good practice to save `$?` early, as other commands in the `PROMPT_COMMAND` might change it.
+* **`logger`**: This is a command-line utility that sends a message to the system's `syslog` (via `rsyslog` on most modern systems). This is how the shell command gets into the central logging system.
+* **`-p local1.notice`**: This flag specifies the "facility" and "priority" of the log message.
+    * **`local1`**: This is a "local" facility, often used for custom application logging. It's a good choice because it won't interfere with the standard system logging.
+    * **`notice`**: This is a priority level, indicating that the message is of normal but significant status.
+* **`-t bash[$$]`**: This sets the "tag" for the log message.
+    * **`bash`**: The name of the program sending the log message.
+    * **`[$$]`**: The `$$` variable holds the Process ID (PID) of the current shell. This is a very useful piece of information for auditing, as it uniquely identifies the shell session from which the command was run.
+* **`"$(whoami) [$$]: ... "`**: This is the actual log message content.
+    * **`$(whoami) [$$]:`**: This part identifies the user who ran the command and their shell's PID. `whoami` returns the effective username.
+    * **`$(history 1 | sed "s/^[ ]*[0-9]\+[ ]*//")`**: This is the clever part that gets the actual command.
+        * **`history 1`**: This command outputs the last command from the user's history list.
+        * **`|`**: The pipe sends the output of `history 1` to the `sed` command.
+        * **`sed "s/^[ ]*[0-9]\+[ ]*//"`**: This `sed` command uses a regular expression to clean up the output. `history 1` often includes a history number (e.g., `"123 ls -l"`). This `sed` command removes that number and any leading spaces, leaving just the raw command string (`"ls -l"`).
+
+**What the `/etc/bash.bashrc` modification achieves:**
+It configures every new Bash shell for every user to automatically log every single command they type to the `rsyslog` daemon. The log message includes the username, the shell's PID, and the command itself.
+
+### 2. Configuring `rsyslog`
+
+`echo 'local1.* /var/log/command_audit.log' | sudo tee /etc/rsyslog.d/90-audit.conf`
+`sudo systemctl restart rsyslog`
+
+This part takes the log messages being generated by `bash.bashrc` and stores them in a dedicated, secure file.
+
+* **`echo 'local1.* /var/log/command_audit.log'`**: This command generates the configuration line for `rsyslog`.
+    * **`local1.*`**: This is the "selector." It tells `rsyslog` to look for any message with the `local1` facility, regardless of its priority (`*`). This matches the `local1` facility we specified in the `logger` command.
+    * **`/var/log/command_audit.log`**: This is the "action." It tells `rsyslog` to write any matching message to this specific file.
+* **`| sudo tee /etc/rsyslog.d/90-audit.conf`**:
+    * **`|`**: The pipe sends the output of the `echo` command to the `tee` command.
+    * **`sudo tee`**: The `tee` command reads from standard input and writes to both standard output and one or more files. This is used here because `echo`'s output needs to be written to a file that requires root privileges (`/etc/rsyslog.d/`), and `sudo` can't directly redirect output (`>`) to a file it doesn't own. `tee` solves this by running with `sudo` and handling the file write.
+    * **`/etc/rsyslog.d/90-audit.conf`**: This is the destination file for the `rsyslog` configuration. Placing custom configurations in the `/etc/rsyslog.d/` directory (with a number prefix like `90-`) is a best practice, as it keeps them separate from the main `rsyslog.conf` file and ensures they load in a predictable order.
+* **`sudo systemctl restart rsyslog`**: This command restarts the `rsyslog` service. The `rsyslog` daemon reads its configuration files on startup, so this step is necessary to make the new rule for `command_audit.log` take effect.
+
+**What the `rsyslog` configuration achieves:**
+It creates a specific rule to intercept all shell command logs (those tagged as `local1`) and writes them to a dedicated log file (`/var/log/command_audit.log`), separate from other system logs. This makes auditing easier and more secure.
+```
 ⸻
 
 🧪 Bonus Hardening Task (Optional)
