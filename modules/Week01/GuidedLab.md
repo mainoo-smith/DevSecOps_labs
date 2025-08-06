@@ -87,6 +87,7 @@ sudo systemctl disable bluetooth.service
 sudo apt autoremove -y
 
 5. 🔎 Inspect Running Processes
+
 Understand what's running on your system. This is a baseline for future anomaly detection.
 # List processes sorted by memory usage
 ps aux --sort=-%mem | head -n 15
