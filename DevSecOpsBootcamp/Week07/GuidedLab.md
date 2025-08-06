@@ -1,170 +1,248 @@
-Title: Runtime Integrity, Provenance & Environment Isolation
+📁 Week7/GuidedLab.md
 
-🧠 Lab Goals
-By the end of this lab, you'll have:
+Title: Building a Secure, Automated CI/CD Pipeline with AWS CodePipeline & CodeBuild
 
-Signed your container images via CI/CD using Cosign
+⸻
 
-Generated SBOMs using Trivy and Syft
+🧪 Scenario
 
-Enabled Amazon Inspector runtime scanning for ECS
+You’re building the production-grade pipeline for notes-service.
+It must:
+	1.	Pull source from GitHub
+	2.	Run tests and generate SBOM using CodeBuild
+	3.	Enforce Trivy vulnerability scans
+	4.	Store artifacts in S3
+	5.	Deploy to ECS (or Lambda) only if scans pass
+	6.	Securely handle secrets via SSM
+	7.	Notify on failures via SNS (optional)
 
-Verified container signatures before ECS deployment
+⸻
 
-Enforced network isolation policies via ECS Service Connect
+🔧 Pre-Requirements
 
-Detected drift between signed image and deployed runtime task
+✅ A working notes-service repo
+✅ AWS CLI and credentials set up
+✅ IAM permissions to create:
+	•	CodePipeline
+	•	CodeBuild projects
+	•	S3 bucket
+	•	ECS service or Lambda function
 
-🧱 Lab Structure
-Stage	Tools
-Image Signing	Cosign + GitHub OIDC
-SBOM Generation	Trivy + Syft
-Runtime Scanning	Amazon Inspector
-Signature Verification	Cosign + deploy gating
-ECS Isolation	ECS Service Connect, namespaces
-Drift Monitoring	ECR tags + ECS task metadata comparison
-🛠️ PART 1: Container Signing with Cosign
-🧾 Step 1: Install Cosign Locally (for testing)
-brew install cosign  # macOS
-# OR
-curl -sSL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 \
-  -o /usr/local/bin/cosign && chmod +x /usr/local/bin/cosign
-🔐 Step 2: Sign Image via GitHub Actions
-Add to your pipeline (backend.yml or frontend.yml):
+⸻
 
-- name: Sign Docker image with Cosign
-  run: |
-    cosign sign --yes \
-      --key env://COSIGN_PRIVATE_KEY \
-      ${{ secrets.ECR_REGISTRY }}/backend:${{ github.sha }}
-  env:
-    COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-    COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-🔐 Store the COSIGN_PRIVATE_KEY and COSIGN_PASSWORD in GitHub Secrets.
+🧱 Directory Layout
 
-Use GitHub Actions OIDC instead of a static key (recommended for prod):
+Add to your repo:
 
-cosign sign --yes --identity-token $ACTIONS_ID_TOKEN <image>
-✅ Step 3: Verify Image Signature (Before Deploy)
-cosign verify $ECR_REGISTRY/backend:<tag>
-❌ CI fails if image is unsigned or modified.
+infra/
+├── pipeline/
+│   ├── pipeline.yaml        # CloudFormation/CDK definition
+│   ├── buildspec.yml        # CodeBuild instructions
+│   └── deploy.sh            # Secure deploy script
+scripts/
+├── sbom/
+│   └── trivy_to_html.py     # Reuse from Week 5
+├── secrets/
+│   └── fetch_secrets.sh     # Reuse from Week 5
+.env.example
 
-📦 PART 2: Generate SBOMs
-Step 1: Generate SBOM with Trivy
-Add to pipeline:
 
-- name: Generate SBOM
-  run: |
-    trivy image --format cyclonedx \
-      --output sbom-backend.json \
-      ${{ secrets.ECR_REGISTRY }}/backend:${{ github.sha }}
-🎯 Store this in S3, SSM Parameter Store, or attach to build artifacts.
+⸻
 
-Step 2: Generate SBOM with Syft
-syft $ECR_REGISTRY/backend:${{ github.sha }} -o json > sbom-backend.json
-🔍 PART 3: Enable Amazon Inspector for Runtime CVE Scanning
-Step 1: Enable Inspector in Region
-aws inspector2 enable --resource-types EC2 ECR
-ECS on Fargate automatically integrates via ECR scanning.
+🛠️ Step-by-Step
 
-Step 2: Enable Scan on Push (ECR)
-aws ecr put-image-scanning-configuration \
-  --repository-name backend \
-  --image-scanning-configuration scanOnPush=true
-Step 3: View Inspector Findings
-aws inspector2 list-findings \
-  --filter criteria='{"repositoryName":[{"value":"backend","comparison":"EQUALS"}]}'
-🚦 PART 4: Gate ECS Deployments Based on Signature Verification
-Update deployment pipeline:
+⸻
 
-- name: Verify Image Signature
-  run: |
-    cosign verify $ECR_REGISTRY/backend:${{ github.sha }}
-❌ Block deploy if unsigned or tampered.
+✅ Step 1: Define buildspec.yml
 
-Add optional signature check in ECS task definition label or tag:
+This controls what CodeBuild does.
+Create infra/pipeline/buildspec.yml:
 
-"imageTag": "backend:git-sha-verified"
-🌐 PART 5: ECS Service Connect Isolation Rules
-Step 1: Enable Namespaces Per Environment
-Create namespaces:
+version: 0.2
 
-aws servicediscovery create-namespace --name dev --type HTTP
-aws servicediscovery create-namespace --name qa --type HTTP
-Assign services to namespace:
+env:
+  variables:
+    IMAGE_NAME: "notes-service"
+  secrets-manager:
+    DB_PASSWORD: "notes/db_password"
+    API_KEY: "notes/api_key"
 
-service_connect_configuration {
-  enabled = true
-  namespace = "dev"
-  services {
-    port_name = "backend"
-    client_alias {
-      port = 8080
-    }
-  }
-}
-Step 2: Block Same-Service Calls in Dev
-In ECS Task Security Groups:
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+      python: 3.11
+    commands:
+      - echo "🔐 Installing tools"
+      - pip install trivy boto3
+  pre_build:
+    commands:
+      - echo "🔍 Running tests..."
+      - npm install && npm run test
+  build:
+    commands:
+      - echo "🔐 Running vulnerability scan"
+      - trivy image --format cyclonedx --output sbom.json $IMAGE_NAME
+      - python scripts/sbom/trivy_to_html.py sbom.json
+      - mkdir -p artifacts && mv sbom.* artifacts/
+  post_build:
+    commands:
+      - echo "📦 Uploading to S3"
+      - aws s3 cp artifacts/ s3://devsecops-artifacts/$IMAGE_NAME/ --recursive
+artifacts:
+  files:
+    - artifacts/*
 
-# Allow frontend to backend
-ingress {
-  from_port = 8080
-  to_port = 8080
-  protocol = "tcp"
-  security_groups = [frontend_sg]
-}
+✅ Security Notes:
+	•	Secrets pulled from AWS Secrets Manager (not env vars)
+	•	No hardcoded creds
+	•	All logs are S3-uploaded, not printed
 
-# Deny backend → backend
-Step 3: Allow Dev Service A → Staging Service B
-Use Service Connect + hardcoded aliasing:
+⸻
 
-client_alias {
-  dns_name = "staging-b.backend.staging"
-  port = 9090
-}
-🌀 PART 6: Detect Container Drift
-Step 1: Get Running Task Image
-aws ecs describe-tasks --tasks <id> \
-  --cluster <cluster> \
-  --query "tasks[].containers[].image"
-Step 2: Compare with Signed Tag
-Use:
+✅ Step 2: Create the S3 Artifact Bucket
 
-cosign verify <ECR_IMAGE_URI>
-Fail if:
+aws s3 mb s3://devsecops-artifacts
 
-Image doesn’t match latest signed SHA
+Restrict access via bucket policy to:
+	•	CodePipeline
+	•	CodeBuild
+	•	Your IAM user
 
-Container was launched manually or from unsigned pipeline
+⸻
 
-✅ You’ve Now Secured the Runtime
-Layer	Secured How
-Build → Deploy	Cosign signing + Trivy SBOM
-Registry	Amazon Inspector scans, scanOnPush enabled
-Runtime	ECS + Inspector alerts + ECS task metadata
-Networking	ECS Service Connect with namespace isolation
-Drift Detection	Signature check vs running task hash
-🔜 Next: ChallengeLab.md — simulate a runtime image swap, a network violation, and a signature bypass attempt.
-Proceed?
+✅ Step 3: Deploy CodePipeline using CloudFormation or CDK
 
-You said:
-Yes. Let’s also include how services talk to each other with versioning of the services. For example we can point to different versions of the same service in the staging environment 
-ChatGPT said:
-Excellent — we’ll incorporate version-aware service communication, such as:
+Option A: YAML (CloudFormation)
 
-dev-service-A targeting staging-service-B:v2
+Create infra/pipeline/pipeline.yaml:
 
-Cross-env routing using ECS Service Connect DNS aliasing
+Resources:
+  NotesBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BuildAccess
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - secretsmanager:GetSecretValue
+                  - s3:PutObject
+                Resource: "*"
 
-Runtime validation of version constraints
+  NotesCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: notes-service-build
+      Source:
+        Type: GITHUB
+        Location: https://github.com/YOUR_USER/notes-service
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        PrivilegedMode: true
+      ServiceRole: !GetAtt NotesBuildRole.Arn
+      TimeoutInMinutes: 10
+      BuildSpec: infra/pipeline/buildspec.yml
 
-SBOM and signature enforcement per version
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: notes-service-pipeline
+      RoleArn: arn:aws:iam::YOUR_ACCOUNT_ID:role/CodePipelineServiceRole
+      ArtifactStore:
+        Type: S3
+        Location: devsecops-artifacts
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                Owner: YOUR_USER
+                Repo: notes-service
+                Branch: main
+                OAuthToken: YOUR_GITHUB_TOKEN
+        - Name: Build
+          Actions:
+            - Name: BuildNotes
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref NotesCodeBuild
 
-Let’s now begin the ChallengeLab.md for Week 7: Secure Container Runtime & Image Provenance, including these advanced runtime and networking scenarios.
+Deploy:
 
-Ready?
+aws cloudformation deploy \
+  --template-file infra/pipeline/pipeline.yaml \
+  --stack-name notes-pipeline \
+  --capabilities CAPABILITY_NAMED_IAM
 
-You said:
-Ready
-ChatGPT said:
-Here is your advanced ChallengeLab.md for Week 7, combining runtime security, container provenance, and version-aware service communication across environments.
+
+⸻
+
+✅ Step 4: Secure Deployment Script
+
+In infra/pipeline/deploy.sh:
+
+#!/bin/bash
+set -euo pipefail
+
+echo "Deploying $IMAGE_NAME to ECS..."
+
+aws ecs update-service \
+  --cluster notes-cluster \
+  --service notes-service \
+  --force-new-deployment
+
+echo "✅ Deployed successfully"
+
+Only execute this if scans pass.
+
+⸻
+
+✅ Step 5: Integrate Notifications (Optional)
+
+You can add a failure notification via SNS:
+
+  Notifications:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: BuildFailures
+
+Or in CodeBuild UI, configure notification rules.
+
+⸻
+
+✅ What You Now Have
+
+Component	Secured?	Notes
+buildspec.yml	✅	Secrets from Secrets Manager
+CodePipeline stages	✅	Isolated, structured
+SBOM & scans	✅	Artifacted and uploaded
+IAM Roles	✅	Per-stage, scoped
+Deploy	✅	Only after passing build
