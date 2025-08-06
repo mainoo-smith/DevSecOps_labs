@@ -1,185 +1,148 @@
-Title: “Detect, Break, and Harden: Real-World IaC Security Scenarios”
+📁 Week5/ChallengeLab.md
 
-🎯 Goal
-This lab simulates what happens when:
+Title: End-to-End Secure Automation for a Production Microservice Stack
 
-A team member adds insecure changes to infrastructure
+⸻
 
-A bad IaC policy goes unnoticed in a PR
+🧪 Scenario
 
-Cloud resources are manually changed (drift)
+You’re now part of the DevSecOps team managing a growing microservices-based app (auth-service, notes-service, notification-service) hosted on ECS and Lambda.
 
-You accidentally commit secrets
+You’re tasked with scripting a secure and portable daily automation routine that:
+	1.	Checks health of all deployed services
+	2.	Rotates old logs from each container
+	3.	Generates and stores daily SBOM reports
+	4.	Uploads all logs + reports to a secure S3 archive
+	5.	Runs automatically via cron or CI/CD pipeline
 
-You’ll be the DevSecOps engineer responsible for catching and fixing these before deployment or audit.
+You must ensure:
+	•	Secrets are never exposed
+	•	IAM roles are scoped correctly
+	•	Logging avoids sensitive data
+	•	CI jobs can run securely in both GitHub and GitLab environments
 
-🧩 Scenario Setup
-You’ve already built secure infrastructure in Terraform, CDK, and CloudFormation.
-Now you’ll:
+⸻
 
-Introduce intentional vulnerabilities
+🎯 Requirements
 
-Detect them with security tools
+Task	Language	Tooling
+ECS health & Lambda checks	Bash	AWS CLI
+SBOM generation	Python	Trivy
+Log rotation & archive	Bash + Python	gzip, boto3
+Secrets loading	Bash	AWS SSM
+GitOps integration	Both	GitHub Actions / GitLab CI
 
-Enforce policy gates before deploy
 
-Simulate cloud drift and reconcile changes
+⸻
 
-🧱 Section 1: Terraform Misconfiguration + Detection
-🔧 A. Inject Insecure Config
-Open ecs.tf and add the following security vulnerability:
+🛠️ Tasks
 
-resource "aws_security_group" "open_all" {
-  name        = "open-all-sg"
-  description = "Opens all ports (bad)"
-  vpc_id      = module.vpc.vpc_id
+⸻
 
-  ingress {
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+✅ 1. Create a unified Bash script scripts/automation/daily_ops.sh
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-What’s wrong:
+This script should:
+	•	Accept parameters (e.g. service name, region)
+	•	Call other scripts to:
+	•	Check service health (ECS + Lambda)
+	•	Rotate & archive logs
+	•	Generate SBOM and convert to HTML
+	•	Upload artifacts to a specific devsecops-prod-logs S3 bucket
+	•	Load secrets securely from SSM
 
-Opens all TCP ports to the world (0.0.0.0/0)
+The top of the script should look like:
 
-Egress is unrestricted
+#!/bin/bash
+set -euo pipefail
 
-Violates principle of least privilege and PCI/ISO/OWASP rules
+ENV="${1:-prod}"
+REGION="${2:-us-east-1}"
 
-🔍 B. Run Checkov
-checkov -d .
-✅ Expected output:
+The script must log actions to a timestamped file in logs/ (not to stdout).
 
-Check: CKV_AWS_260: "Security group allows unrestricted ingress"
-Result: FAILED
-File: ecs.tf:1
-...
-💡 Why Checkov?
-It codifies security policies into rules. You can enforce this in your CI pipelines to block bad merges or deploys.
+⸻
 
-🛠 C. Fix It
-Update the security group:
+✅ 2. Write a Python script scripts/sbom/sbom_daily_report.py
+	•	It should take an image name and output both .json and .html
+	•	Store results in sbom/YYYY-MM-DD/ folders
+	•	Upload to S3 automatically using boto3
+	•	Send an optional summary to Slack (mock or print)
 
-ingress {
-  from_port   = 443
-  to_port     = 443
-  protocol    = "tcp"
-  cidr_blocks = ["10.0.0.0/16"] # internal only
-}
-Run Checkov again:
+⸻
 
-checkov -d .
-✅ Should pass now.
+✅ 3. Secure .env file loading
+	•	Create .env.example with:
 
-🧱 Section 2: CloudFormation Secret Leak + Linting
-🔧 A. Inject Secret in Template
-In stack.yaml, simulate a mistake:
+AWS_REGION=
+S3_ARCHIVE_BUCKET=
+SLACK_WEBHOOK_URL=
 
-DBPassword:
-  Type: AWS::SSM::Parameter
-  Properties:
-    Name: /notestream/db_password
-    Type: String
-    Value: 'super-secret-plaintext-password'
-🔍 B. Run cfn-lint and cfn_nag
-cfn-lint stack.yaml
-Then:
 
-cfn_nag_scan --input-path stack.yaml
-✅ Expected warnings:
+	•	Bash and Python scripts should read this securely using dotenv or source .env
+	•	In CI/CD: inject values via secrets manager (e.g., AWS_SECRET_ACCESS_KEY, SLACK_TOKEN)
 
-W58: Parameter DBPassword should not use plain-text values
-🧠 Use NoEcho: true and encrypted SSM parameters to store real secrets. Never commit plaintext values.
+⸻
 
-🧱 Section 3: AWS CDK Insecure Defaults + cdk-nag
-🔧 A. Add Open SG in CDK
-In infra_stack.py:
+✅ 4. GitLab or GitHub CI/CD Integration
 
-sg = ec2.SecurityGroup(self, "BadSG", vpc=vpc, allow_all_outbound=True)
-sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "Open SSH access")
-🔍 B. Add cdk-nag to Detect It
-Install:
+Create a pipeline job to run your daily_ops.sh:
 
-pip install cdk-nag
-Update your stack:
+GitHub Actions example:
 
-from cdk_nag import AwsSolutionsChecks
-Aspects.of(self).add(AwsSolutionsChecks())
-Run:
+jobs:
+  daily-automation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          bash scripts/automation/daily_ops.sh prod us-east-1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-cdk synth
-✅ Should show something like:
+GitLab CI example:
 
-[Warning] AwsSolutions-EC23: Security group allows ingress from 0.0.0.0/0 to port 22
-🛠 C. Fix It
-Update rule:
+daily_ops:
+  script:
+    - bash scripts/automation/daily_ops.sh prod us-east-1
+  only:
+    - schedules
 
-sg.add_ingress_rule(ec2.Peer.ipv4("10.0.0.0/16"), ec2.Port.tcp(22), "Internal only")
-🧱 Section 4: Drift Detection with Terraform
-🐛 A. Simulate Drift
-Go to the AWS Console → change a subnet name manually (or add an extra tag).
 
-🔍 B. Detect Drift
-terraform plan
-✅ Output:
+⸻
 
-~ aws_subnet.public[0]
-      tags.Name: "old" => "new"
-🧠 Why this matters:
-Manual changes break IaC consistency. Plan should always reflect infra state.
+🔐 Security Requirements
+	•	No secrets hardcoded in scripts
+	•	Use IAM roles with least privilege (e.g., only allow upload to specific bucket)
+	•	Avoid using eval, os.system() or unsanitized variables
+	•	Set up .gitignore for .env, *.log, *.gz, and generated SBOM files
 
-🛠 C. Reconcile
-Option 1: Accept drift
+⸻
 
-terraform refresh
-Option 2: Enforce source-of-truth
+📦 Output Artifacts (Required)
 
-terraform apply
-🧱 Section 5: Commit Secrets Accidentally + Detect
-🔧 A. Simulate a Leaked Secret
-echo "AWS_SECRET_ACCESS_KEY=1234567890" >> .env
-git add .env
-git commit -m "oops"
-🔍 B. Run GitLeaks
-gitleaks detect --source .
-✅ Output:
+Artifact	Format	Notes
+Health Check Logs	logs/ecs_health_YYYY-MM-DD.log	Plaintext, timestamped
+SBOM JSON	sbom/YYYY-MM-DD/*.json	CycloneDX
+SBOM HTML	sbom/YYYY-MM-DD/*.html	For human consumption
+Uploaded logs	s3://devsecops-prod-logs/...	Auto-versioned
+Archived app logs	*.gz	Auto-uploaded
 
-Secret detected: AWS_SECRET_ACCESS_KEY
-🔐 Add gitleaks to pre-commit or CI to block merge on exposed secrets.
 
-✅ Challenge Completion Checklist
-Challenge	Status
-Insecure SG in Terraform	✅ Detected with Checkov & tfsec
-Plaintext secret in CF	✅ Flagged with cfn-lint & cfn_nag
-Overly open rule in CDK	✅ Caught with cdk-nag
-Secret committed to Git	✅ Detected with gitleaks
-Manual infra drift	✅ Detected with Terraform plan
-📘 Summary: DevSecOps IaC Maturity Practices
-Practice	Benefit
-Scan infra code pre-deploy	Catch CVEs & misconfigs early
-Block secrets in source code	Prevent long-term breaches
-Detect drift	Enforce single source of truth
-Use tools across IaC flavors	Terraform, CDK, CFN all need enforcement
-Shift-left via pipelines	Ensure Dev & Ops stay aligned with security
-🔜 Next:
+⸻
 
-Security.md: Threat modeling misconfigurations & shared cloud risk
+💡 Bonus Challenges
+	•	Add Slack notifications using Python (requests.post) to alert if health check fails
+	•	Encrypt log archives using AWS KMS before upload
+	•	Support different environments (dev, qa, staging, prod) with config files
 
-Reflection.md: CI/CD is policy enforcement, not just automation
+⸻
 
-Would you like to continue with the Security section of Week 5?
+✅ Completion Criteria
 
-You said:
-Yes
-ChatGPT said:
-Great — here's the annotated Security.md for Week 5, focused on the core DevSecOps risks and controls associated with Infrastructure as Code (IaC), across Terraform, CDK, CloudFormation, and SAM.
+You’ve succeeded if:
+	•	All scripts are functional, reusable, secure
+	•	You can trigger the automation manually or via CI/CD
+	•	Logs, SBOMs, and outputs are archived to S3
+	•	Scripts run without needing root access
+	•	No secrets are visible in logs or source control
