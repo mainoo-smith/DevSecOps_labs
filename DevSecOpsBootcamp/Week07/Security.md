@@ -1,136 +1,146 @@
-Title: “Runtime, Registry & Network Hardening”
+📁 Week7/Security.md
 
-🔐 1. Container Signing: Trust But Verify
-Cosign Signing (CI)
+Title: CI/CD Pipeline Security – AWS CodePipeline & CodeBuild Hardening
 
-Every container built in CI is signed using GitHub/GitLab OIDC identity
+⸻
 
-Stored in OCI registry (ECR)
+🔐 Why Pipeline Security Matters in DevSecOps
 
-Verified at deploy via pipeline policy
+CI/CD pipelines are high-value targets. If compromised, they can:
+	•	Deploy malware directly to production
+	•	Leak credentials or API keys to public logs
+	•	Skip critical vulnerability checks
+	•	Allow lateral movement across services
 
-Why It Matters:
+This week, we focused on building secure, least-privilege, auditable pipelines that minimize these risks.
 
-Guarantees container provenance — no tampering between CI and runtime
+⸻
 
-Detects image swaps or untrusted sources
+🔍 What We Secured
 
-cosign sign --yes <image>
-cosign verify <image>
-📜 2. SBOMs: Audit-Ready from Day One
-Trivy / Syft SBOM Generation
+Area	Security Mechanism
+Secrets	Pulled at runtime from Secrets Manager or SSM, never stored in repo or logs
+IAM Roles	Scoped per service and per stage — CodeBuild and CodePipeline have isolated permissions
+Scan Enforcement	Pipeline blocks deployment if critical CVEs are detected via Trivy
+SBOM & Artifacts	Stored in S3 per-service with versioning and path restrictions
+Deployment	Controlled by post-scan approval stage, and run via secure scripts only
+Logging	Enabled CloudWatch logs for build/test/scan/deploy stages
+Notification (optional)	Alerting on pipeline failures via SNS or Slack for visibility
 
-Captures exact software components (libs, deps, licenses)
 
-Stored alongside artifacts (S3 or GitHub release)
+⸻
 
-Why It Matters:
+💣 Real-World CI/CD Threats Prevented
 
-Mandatory for regulated industries (FedRAMP, SOC2, DoD)
+Threat	Mitigation in This Week
+🔓 Leaked secrets in logs	Secrets pulled securely using secretsmanager:GetSecretValue
+🎯 Compromised build container	IAM role scoped only to what it needs (no deploy access)
+🚫 Unscanned image deployed	Trivy enforced via buildspec with fail-on-CVE gate
+🎭 Cross-service artifact poisoning	S3 bucket write paths scoped to auth-service/ or notes-service/ only
+🧪 Bypassed approvals	Manual or scan-based gate required before deploy
+🪓 Lateral movement	CodeBuild cannot affect other builds or deploy other services
+🕵️‍♀️ Lack of traceability	All events logged and tracked via CloudWatch + build logs
 
-Enables instant CVE lookup if a zero-day hits a dependency
 
-trivy image --format cyclonedx -o sbom.json <image>
-🕵️ 3. Amazon Inspector Runtime Scanning
-Enabled for ECS (Fargate)
+⸻
 
-Automatically scans running container layers
+🔑 IAM Best Practices Used
 
-Reports CVEs even after build time
+✅ Per-service IAM Role Scoping
 
-Best Practices:
+Each CodeBuild job gets its own IAM role, limited to:
+	•	Reading only its own secrets
+	•	Uploading its own artifacts
+	•	Pulling images from ECR (read-only)
 
-Enable scanOnPush in ECR
+🧠 This prevents one pipeline from being used to attack another service.
 
-Automate notifications to Slack, Jira, or SIEM via EventBridge
+⸻
 
-aws inspector2 enable --resource-types EC2 ECR
-🔄 4. Drift Detection Between CI and Runtime
-Compare:
+✅ Stage-specific Privileges
 
-ECS task image vs CI signed image hash
+CodePipeline and CodeBuild have separate IAM roles:
+	•	codebuild-auth-service-role → fetch secrets, scan images, upload SBOM
+	•	codepipeline-master-role → orchestrate pipeline stages, trigger deploys
 
-Why It Matters:
+⸻
 
-Detects unauthorized deploys or manual hotfixes
+✅ No Wildcard Secrets Access
 
-IMAGE=$(aws ecs describe-tasks --query 'tasks[].containers[].image')
-cosign verify $IMAGE
-🌐 5. Network Isolation (Service Connect Namespaces)
-Per-Environment Namespaces
+You should avoid policies like:
 
-dev, qa, staging, uat all have isolated namespaces
+"Resource": "*"
 
-Prevents cross-talk (e.g., dev-backend ↔ dev-backend)
+Instead, use:
 
-Enforced via:
+"Resource": "arn:aws:secretsmanager:us-east-1:111111111111:secret:auth-service/db*"
 
-ECS Task Security Groups
+This restricts to only secrets tagged to auth-service.
 
-Service Connect scoped DNS
+⸻
 
-🛡️ 6. HTTPS Enforcement Within ECS Service Connect
-By default, ECS Service Connect uses HTTP over the VPC.
-To enforce HTTPS (TLS) between services, use one of these options:
+🔐 Secrets Security Deep Dive
 
-✅ Option 1: TLS Termination at the Service (Recommended)
-Backend runs with TLS enabled (self-signed or ACM)
+Technique	Why It Matters
+AWS Secrets Manager	Provides versioning, rotation, encryption-at-rest
+buildspec secrets-manager: syntax	Ensures secrets are never stored in plaintext on disk
+Environment variable handling	Scripts must avoid echo $SECRET or writing secrets to logs
+.env.example and dotenv validation	Used only for local development, not production builds
 
-https.createServer({ key, cert }, app).listen(443);
-Frontend or client services call:
 
-await axios.get("https://service-b-v2.staging:443/secure", {
-  httpsAgent: new https.Agent({ rejectUnauthorized: false }) // dev/test only
-});
-✅ Ideal for secure intra-VPC encryption and RBAC via certs.
+⸻
 
-🔐 Option 2: mTLS with Envoy Proxy Sidecar
-Each ECS task runs Envoy or AWS App Mesh proxy
+📦 SBOM, Trivy, and Artifact Hardening
 
-Certs issued via ACM Private CA
+✅ SBOM Artifacts
+	•	Generated per build using Trivy in cyclonedx format
+	•	Converted to HTML via custom Python
+	•	Uploaded to:
 
-Enforced per-source/destination identity
+s3://devsecops-staging-artifacts/notes-service/{build-id}/sbom.json
 
-Why It Matters:
 
-Strongest security model: mTLS, policy enforcement, identity-bound traffic
 
-🔒 Option 3: Internal ALBs with TLS & SNI Routing
-Expose each ECS service via internal ALB with TLS listener
+🛡️ All files stored securely and versioned for audit purposes.
 
-Attach ACM certificate
+⸻
 
-Use SNI or path-based routing to split versions
+✅ CVE Scan Enforcement
 
-Useful if Service Connect DNS isn't flexible enough for your HTTPS model.
+Trivy exits with status code if any CRITICAL CVEs are found:
 
-✅ Best Practice Summary:
-Approach	TLS?	Auth?	Use When...
-TLS inside app	✅	❌ (unless mTLS in app)	Simple HTTPS
-TLS + ACM certs	✅	✅	Internal trust model
-Envoy sidecar	✅✅	✅✅	Full mTLS, policy-driven
-No HTTPS (default)	❌	❌	Not recommended
-✅ Bonus: Version-Aware Service Routing Security
-Register each service version separately in Service Connect (e.g., service-b-v2)
+if [ "$CRITICALS" -gt 0 ]; then
+  echo "❌ Blocking deploy due to critical vulnerabilities"
+  exit 1
+fi
 
-Limit each service to only talk to specific version endpoints
+✅ This enforces security policy as code — your pipeline won’t silently deploy vulnerable containers.
 
-Use DNS patterns like service-b-v2.staging and reject fallback calls
+⸻
 
-axios.get("https://service-b-v2.staging:443")
-✅ Prevents shadow deployments, version confusion, and data inconsistencies.
+🔍 Logging & Observability
+	•	CodeBuild sends logs to CloudWatch Logs
+	•	You can subscribe to these logs for:
+	•	Anomaly detection
+	•	Post-mortem analysis
+	•	Integration into GuardDuty or SIEMs
 
-🔚 Summary
-Area	Security Practice
-Build pipeline	Cosign signature + SBOMs
-Registry	Inspector scan-on-push
-Runtime	Inspector + drift detection
-Network	SG rules + Service Connect namespaces
-Transport	HTTPS via in-app TLS or Envoy
-Versioning	DNS-based routing + client enforcement
-Would you like to proceed to the Reflection.md for Week 7?
+⸻
 
-You said:
-Yes
-ChatGPT said:
-Here is your Reflection.md for Week 7: Secure Container Runtime & Image Provenance, capturing how your DevSecOps maturity has now reached runtime awareness and service version trust.
+🧠 DevSecOps Concepts Applied
+
+Principle	Implementation
+🔐 Least privilege	IAM roles scoped to service, stage, and action
+🧱 Defense in depth	Secrets, scans, deploys, and IAM all enforced independently
+🧪 Shift-left testing	Vulnerabilities are scanned before deploy
+📜 Security as code	IAM, policies, buildspecs all codified in Git
+📦 Software supply chain security	SBOMs generated, stored, and versioned for every build
+
+
+⸻
+
+✅ Your Security Wins This Week
+	•	CI/CD builds and deploys are now gated by security
+	•	Each microservice is isolated from others in terms of permissions
+	•	Every pipeline action is auditable and enforceable
+	•	Security failures are loud, visible, and logged
