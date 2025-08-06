@@ -1,120 +1,94 @@
-– Secure Infrastructure as Code (IaC) with Terraform, AWS CDK, CloudFormation & SAM
-🧠 Module Theory: Why IaC is Foundational to DevSecOps
-Infrastructure as Code is not just automation — it's policy-as-code, change control, and auditable configuration.
+📁 Week5/Overview.md
 
-Without secure IaC:
+Title: ⚙️ Scripting & Automation with Bash & Python
+Focus: Automating DevSecOps workflows across environments securely and efficiently
 
-Teams manually create resources → drift and misconfiguration
+⸻
 
-Devs deploy over-provisioned buckets, public secrets, or open SGs
+🧠 Conceptual Overview
 
-Infra becomes a black box: “works on AWS, not sure how”
+🔧 Why Scripting Matters in DevSecOps
 
-With DevSecOps IaC, every change is:
+Scripting is the glue between infrastructure, CI/CD, security scanning, monitoring, and deployment. Whether you’re:
+	•	Automating a cloud backup
+	•	Generating a signed SBOM
+	•	Or sending audit logs to a compliance bucket
 
-Reproducible
+…chances are, a script is behind it.
 
-Auditable
+Scripting done right enables:
+	•	Repeatability & reliability
+	•	Secure execution of privileged tasks
+	•	Team-wide operational consistency
+	•	Lightweight automation without heavyweight pipelines
 
-Scanned before apply
+⸻
 
-Testable
+🐚 Bash vs 🐍 Python
 
-Enforced by policy
+Feature	Bash	Python
+Great for	Shell tasks, chaining commands, log rotation	Complex logic, API integrations, report generation
+Strengths	Native to UNIX, cron-friendly	Libraries (e.g. boto3, requests), readable
+Weaknesses	Harder to test/scale	Slower for one-liners
+DevSecOps Use	Glue scripts, log rotation, backups	Report generators, scanners, validations
 
-🎯 Week 5 Goals
-By the end of this week, you’ll:
+We’ll use both in this module — in the right places and with security in mind.
 
-✅ Build secure cloud infrastructure with:
+⸻
 
-Terraform
+🔐 Security Risks in Scripting
 
-AWS CDK (Python & TypeScript)
+Common mistakes we’ll avoid:
+	•	Hardcoding secrets
+	•	Unsafe input parsing ($1, eval, os.system())
+	•	Over-permissioned scripts (running as root)
+	•	Logging sensitive info
+	•	Shell injection ($(user_input))
 
-CloudFormation
+You’ll learn to:
+	•	Validate inputs
+	•	Sanitize environment variables
+	•	Use AWS SSM + .env for secure secrets loading
+	•	Log responsibly
 
-AWS SAM
+⸻
 
-✅ Enforce DevSecOps best practices via:
+🧩 Evolving the App
 
-Policy-as-code (OPA, tflint, checkov, cfn-lint)
+This week we evolve the app with scripting:
 
-Secrets isolation
+Task	Tool	Scripted With
+ECS service health check	AWS CLI	Bash
+Trivy vulnerability report → SBOM	Trivy JSON → HTML	Python
+Secrets fetch from SSM Parameter Store	AWS CLI + dotenv	Bash
+App deployment pre-check (ports, version)	Axios + shell test	Python
+Audit log archive to S3	AWS SDK	Python
 
-IAM least privilege
+Each of these will be implemented as:
+	•	Standalone script (.sh or .py)
+	•	CI/CD job template (GitHub/GitLab)
+	•	Secure file (.env, IAM role, encrypted store)
 
-Guardrails for open resources (buckets, SGs, ports)
+⸻
 
-✅ Deploy secure VPCs, ECS clusters, IAM roles, Secrets Manager, and container registries for your app
+🎯 DevSecOps Learning Objectives
 
-🛠 Tools Used
-Tool	Purpose
-Terraform	Multi-cloud declarative infra
-AWS CDK	Programmatic infrastructure in Python or TS
-CloudFormation	AWS-native declarative IaC
-AWS SAM	Serverless app deployment (API Gateway, Lambda)
-Checkov, tfsec, tflint	IaC security scanning
-cfn-lint	CloudFormation linting
-OPA / conftest	Policy-as-code enforcement
-Terraform Cloud (optional)	Remote backend, drift detection
-AWS CodePipeline / GitHub Actions	CI/CD for infrastructure deployments
-🧩 Application Evolution (IaC-Driven Stack)
-You’ll define and provision secure, isolated infrastructure for the notestream platform:
+By the end of this module, you’ll be able to:
 
-Resource	Purpose
-VPC	Private networking boundaries for containers
-ECS Cluster	Microservice hosting platform
-Fargate Tasks	Runs backend/frontend containers
-ALB / API Gateway	Public access with WAF rules
-RDS / DynamoDB	Encrypted, isolated data layer
-Secrets Manager / SSM	Inject secrets at runtime
-IAM roles	Fine-grained access for ECS, CI/CD, Lambda
-Container Registry (ECR)	Secure artifact storage (images, SBOMs)
-Each component will be:
+✅ Write production-grade, reusable Bash and Python scripts
+✅ Integrate those scripts into pipelines and automated workflows
+✅ Use secure scripting practices (env vars, no hardcoding, input validation)
+✅ Handle secrets and sensitive data responsibly
+✅ Leverage automation in CI/CD, monitoring, backups, and reporting
+✅ Explain scripting’s role in incident response, compliance, and DevOps scaling
 
-Defined in Terraform, CDK, or SAM
+⸻
 
-Scanned and linted before apply
+🛠️ Tools & Services Covered
 
-Version-controlled and reviewed before changes
-
-🔐 DevSecOps Concepts Introduced
-Concept	Description
-Policy-as-Code	OPA/Checkov/Tfsec prevent insecure infra from deploying
-Drift Detection	Detect changes made outside code (Terraform Plan / CDK Diff)
-Least Privilege IAM	Only grant access to what’s required
-Secure Defaults	S3 buckets encrypted, SGs closed by default, secrets never hardcoded
-Dependency Isolation	Separate stacks, CI/CD for infra and app individually
-🧱 IaC Security Practices Covered
-Layer	Control
-Storage (S3, RDS)	Encrypted, private, access-logged
-Networking	VPC, private subnets, no 0.0.0.0/0 SGs
-Secrets	Injected at runtime via Secrets Manager or Parameter Store
-IAM	Role boundaries for CI/CD, ECS tasks, Lambda
-Auditing	CloudTrail + Terraform plan logs
-Testing	checkov, tflint, cdk-nag, conftest for secure IaC reviews
-📁 Deliverables This Week
-✅ Infrastructure Code (Terraform, CDK, CloudFormation, SAM)
-✅ Scanning reports (Checkov, Tfsec, cfn-lint, cdk-nag)
-✅ Policy enforcement gates (opa, conftest)
-✅ Git-based IaC pipelines with rollback, versioning
-✅ Secure container runtime hosting for your microservices
-
-🔜 Next:
-
-GuidedLab.md: Build and secure the infrastructure using all 4 IaC tools
-
-ChallengeLab.md: Test drift, misconfig, and failed policy enforcement
-
-Security.md: Threat model for cloud-native misconfigurations
-
-Reflection.md: IaC as the DevSecOps blueprint for reproducibility and control
-
-Ready to begin with the Guided Lab?
-
-You said:
-Guided lab should be very detailed as this step is crucial and using different iac tools
-ChatGPT said:
-Excellent — I’ll make the Week 5 Guided Lab exceptionally detailed, walking you step by step through using Terraform, AWS CDK, CloudFormation, and AWS SAM to provision secure infrastructure for your containerized app.
-
-Starting now with:
+Tool	Use
+Bash, cron, set -euo pipefail	Safety-first Bash scripting
+Python 3.11+, argparse, os, json, boto3	CLI tools, AWS automation
+AWS CLI + SSM + IAM	Secure secret fetch and resource automation
+Trivy	SBOM generation for automation
+GitHub Actions + GitLab CI	Script integration into CI/CD
