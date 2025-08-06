@@ -1,6 +1,7 @@
 Linux OS Hardening, Misconfigurations, and Key DevSecOps Controls
 
 🔐 Why OS-Level Security Matters in DevSecOps
+
 In many modern systems, the first successful attack happens at the OS level, not through the application or network. Misconfigured users, open permissions, lingering SUID binaries, or overly permissive sudo rights can be exploited by attackers to escalate privileges or exfiltrate data.
 DevSecOps aims to shift security left by defining and enforcing secure defaults at every system layer—and the OS is layer zero.
 🛠️ Common OS Misconfigurations in the Real World
