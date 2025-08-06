@@ -152,7 +152,155 @@ s3://devsecops-staging-artifacts/
 ✅ Deploy must tag and version ECS correctly
 ✅ Logs must avoid sensitive data
 
+🔐 IAM for Secure CodePipeline & CodeBuild (Challenge Lab)
+
 ⸻
+
+🎯 What We’re Securing
+
+Your pipeline handles:
+	•	Secret fetching
+	•	SBOM generation
+	•	Artifact uploading
+	•	Staging deployments to ECS
+
+Each CodeBuild project and CodePipeline stage must use principle of least privilege — only the minimum actions on the minimum resources needed.
+
+⸻
+
+📁 IAM Role: CodeBuildAuthServiceRole
+
+Let’s create a secure IAM role for the auth-service CodeBuild job.
+
+⸻
+
+✅ CloudFormation Snippet (Annotated)
+
+Resources:
+  CodeBuildAuthServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: codebuild-auth-service-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com     # Only CodeBuild can assume this role
+            Action: sts:AssumeRole
+
+      Policies:
+        - PolicyName: AuthServiceBuildPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # ✅ Fetch only required secrets
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - arn:aws:secretsmanager:us-east-1:111111111111:secret:auth-service/db*
+              
+              # ✅ Read-only access to specific SSM parameters
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - arn:aws:ssm:us-east-1:111111111111:parameter/auth-service/*
+
+              # ✅ Allow SBOM/artifact upload only to auth-service bucket path
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - arn:aws:s3:::devsecops-staging-artifacts/auth-service/*
+              
+              # ✅ Allow Trivy to pull base images (if needed)
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource: "*"
+
+
+⸻
+
+🔍 What Each Block Does:
+
+Block	Why It Exists
+secretsmanager:GetSecretValue	Allows CodeBuild to securely inject secrets from Secrets Manager
+ssm:GetParameter	Fetch secure config (e.g. feature flags, env settings) from Parameter Store
+s3:PutObject	Upload scan results, SBOM, logs, and artifacts to service-specific S3 paths
+ecr:*	Lets Trivy or CodeBuild pull base images for scanning or builds
+
+
+⸻
+
+🔐 Least Privilege Enforcement
+	•	This IAM role cannot deploy, read from other services’ S3 paths, or fetch unrelated secrets
+	•	If compromised, the blast radius is isolated to one build job
+	•	Enforces one IAM role per service per CodeBuild
+
+⸻
+
+📁 IAM Role: CodePipelineServiceRole
+
+This is the role used by the pipeline orchestration, not the builds.
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelineAccess
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - arn:aws:s3:::devsecops-staging-artifacts/*
+
+              - Effect: Allow
+                Action:
+                  - ecs:UpdateService
+                  - ecs:DescribeServices
+                Resource: "*"
+
+
+⸻
+
+🧠 DevSecOps Security Practices Recap
+
+Practice	Explanation
+🔐 Per-service IAM roles	Limits blast radius of misconfig or compromise
+🔍 Explicit S3 path policies	Prevents one service from writing into another’s directory
+✅ Secrets pulled securely at runtime	No secrets in source code or buildspec
+🔒 No deploy access in CodeBuild role	Prevents lateral movement via build jobs
+📜 IAM policies as code (YAML/CDK)	Auditable and trackable via Git
+
+
+⸻
+
+✅ IAM Summary
+
+You’ve now secured:
+	•	CodeBuild execution with minimum permissions
+	•	Artifact storage per service
+	•	Pipeline operations like starting builds and deployments
 
 🎯 Success Criteria
 
