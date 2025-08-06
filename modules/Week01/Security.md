@@ -10,7 +10,9 @@
 | Over-permissive sudo | sudo ALL=(ALL) ALL | No audit trail, full access |
 | Insecure $PATH or aliases | Modified .bashrc | Command hijacking |
 | Unnecessary SUID binaries | /usr/bin/nmap, /bin/mount | Local privilege escalation |
+
 🔍 Special Permissions: SUID, SGID, & Sticky Bit
+
 ✅ SetUID (s on user bit)
 Allows a file to be executed with the permissions of its owner (often root).
  * Risk: Dangerous when used carelessly (e.g., /usr/bin/passwd is okay, but /usr/bin/vim is not).
@@ -22,6 +24,7 @@ Forces files created in a directory to inherit the group ID.
 ✅ Sticky Bit (t on other bit)
 Used mostly on shared directories (like /tmp) to restrict file deletions to the file's owner.
  * How to check: ls -ld /tmp (should show drwxrwxrwt)
+
 📦 Recommended OS Hardening Steps
 | Task | Why It Matters |
 |---|---|
@@ -33,6 +36,7 @@ Used mostly on shared directories (like /tmp) to restrict file deletions to the 
 | Restrict sudo commands | Minimizes lateral movement opportunities |
 | Limit open ports with ufw | Prevents unnecessary service exposure |
 | Use AppArmor or SELinux | Enforces Mandatory Access Control (MAC) |
+
 🛠️ Tools You Should Know
 | Tool | Usage |
 |---|---|
@@ -42,6 +46,7 @@ Used mostly on shared directories (like /tmp) to restrict file deletions to the 
 | ufw / iptables | Host-level firewall |
 | logrotate | Ensures logs don't overflow disks |
 | psacct or acct | Per-user command tracking |
+
 🔄 DevSecOps Integration Patterns
 | Practice | Application |
 |---|---|
@@ -50,6 +55,7 @@ Used mostly on shared directories (like /tmp) to restrict file deletions to the 
 | Rotate SSH keys with automation | Can be done weekly or on incident |
 | Validate permissions in CI/CD | Use checks like ls -l as a pre-deployment gate |
 | Include lynis in image scanning | Fails the pipeline if insecure defaults exist |
+
 🚩 Red Team Insight
 Red teamers often look for these common vulnerabilities:
  * Loose SUID binaries
