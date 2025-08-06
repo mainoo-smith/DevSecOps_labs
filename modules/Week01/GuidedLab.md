@@ -97,6 +97,7 @@ sudo apt update
 sudo apt install auditd lynis -y
 
 ✅ Verification Checklist
+
 | Task | Verified |
 |---|---|
 | devsecops user created with sudo | ✅ |
@@ -105,7 +106,9 @@ sudo apt install auditd lynis -y
 | SSH key-based login configured | ✅ |
 | Unnecessary services disabled | ✅ |
 | Basic audit tools installed | ✅ |
+
 🧪 Run: First Security Scan
+
 Run a baseline audit with lynis and save the report. You'll compare this against future hardened states.
 sudo lynis audit system > ~/lynis_report.txt
 less ~/lynis_report.txt
