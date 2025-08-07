@@ -1,302 +1,187 @@
-(Annotated)
-Secure Infrastructure as Code with Terraform, AWS CDK, and CloudFormation
-Focus: What, Why, How for every command and file
+📁 Week5/GuidedLab.md
 
-🔹 SECTION 1: Terraform (Declarative, Cloud-Agnostic IaC)
-✅ Use Terraform when you want clear state tracking, cloud-agnostic provisioning, and strong third-party tool ecosystem (Checkov, tfsec, TFC). It’s popular in enterprise DevSecOps environments.
+Title: Secure Scripting: Bash & Python Automation for Cloud, CI/CD & Compliance
 
-🧱 Step 1: Set Up Terraform Directory
-mkdir -p infrastructure/terraform
-cd infrastructure/terraform
-Why: Organize your IaC in a clean, modular structure. Keeping infrastructure code separate from app code helps with maintainability and security audits.
+⸻
 
-📄 main.tf
-provider "aws" {
-  region = "us-east-1"
-}
-What: Declares AWS as the provider and sets your default region.
-Why: Every Terraform config needs a provider block. Region scoping ensures all resources are deployed consistently and avoids accidental cross-region provisioning.
+🧪 Scenario
 
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "4.0.2"
+You’ve been asked to:
+	•	Monitor the health of your ECS services
+	•	Generate SBOM reports from vulnerability scans
+	•	Fetch secrets from AWS SSM Parameter Store
+	•	Log archive and cleanup routines
 
-  name = "notestream-vpc"
-  cidr = "10.0.0.0/16"
-  azs             = ["us-east-1a", "us-east-1b"]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
+You’ll build Bash and Python scripts that run locally and in CI/CD — with secure handling of secrets, inputs, logs, and IAM.
 
-  enable_dns_hostnames = true
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
+⸻
 
-  tags = {
-    Name        = "notestream"
-    Environment = "dev"
-  }
-}
-What: Uses a popular Terraform community module to create a secure, NAT-enabled VPC with public and private subnets.
-Why: Never reinvent the wheel. Community modules simplify best-practice infrastructure. NAT gateways allow outbound internet access from private subnets (needed for ECS tasks to pull packages/images).
-Security: ECS tasks should go in private subnets — never expose services directly without an ALB.
+🧱 Project Structure
 
-📄 ecs.tf
-resource "aws_ecs_cluster" "main" {
-  name = "notestream-ecs"
-}
-What: Creates an ECS cluster to run containers.
-Why: This is the foundation of your container orchestration stack. We’ll deploy microservices here using Fargate.
+We’ll add this to your app repo:
 
-resource "aws_ecr_repository" "backend" {
-  name = "notestream-backend"
-  image_tag_mutability = "IMMUTABLE"
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
-What: Creates a secure container registry for your backend image.
-Why: ECR supports automated scanning, version immutability (no overwriting tags), and fine-grained IAM.
-Security: Enabling scan_on_push helps catch CVEs early; IMMUTABLE ensures every image is traceable (important for SBOM tracking).
+scripts/
+├── health/
+│   └── check_ecs_health.sh
+├── sbom/
+│   └── trivy_to_html.py
+├── secrets/
+│   └── fetch_secrets.sh
+├── logs/
+│   └── archive_logs.py
+.env.example
 
-📄 secrets.tf
-resource "aws_secretsmanager_secret" "db_credentials" {
-  name = "notestream/db"
-  recovery_window_in_days = 0
-}
-What: Creates a secret entry in AWS Secrets Manager.
-Why: Hardcoding secrets in code or environment files is insecure. Secrets Manager offers encryption at rest, access logging, and lifecycle rotation.
-Security: Rotate these automatically using Lambda or AWS-native rotation features later.
+You’ll also prepare scripts/ci/ for jobs that can run in GitHub Actions or GitLab CI.
 
-resource "aws_secretsmanager_secret_version" "db_credentials_version" {
-  secret_id     = aws_secretsmanager_secret.db_credentials.id
-  secret_string = jsonencode({
-    username = "notestream_user"
-    password = "secure_password_2025!"
-  })
-}
-What: Assigns a version to the secret, including the sensitive values.
-Why: You can rotate secrets by adding new versions. Version control lets you audit changes and roll back if needed.
+⸻
 
-🔁 Initialize & Apply
-terraform init
-What: Initializes the working directory and downloads required modules/plugins.
-Why: Terraform must pull provider binaries and initialize the dependency graph before execution.
+🐚 Part 1: Bash Script – ECS Service Health Check
 
-terraform fmt && terraform validate
-Why:
+🔹 Step 1.1: check_ecs_health.sh
 
-fmt ensures consistent formatting for maintainability.
+#!/bin/bash
+set -euo pipefail
 
-validate checks for syntax or logic errors before plan.
+CLUSTER_NAME="${1:-}"
+SERVICE_NAME="${2:-}"
 
-terraform plan
-Why: Shows exactly what Terraform will do — critical for audit, approvals, and CI/CD previews.
+if [[ -z "$CLUSTER_NAME" || -z "$SERVICE_NAME" ]]; then
+  echo "Usage: $0 <cluster-name> <service-name>"
+  exit 1
+fi
 
-terraform apply
-What: Applies the plan and provisions infra.
-Security Tip: Never run apply automatically in CI without plan approval step.
+STATUS=$(aws ecs describe-services \
+  --cluster "$CLUSTER_NAME" \
+  --services "$SERVICE_NAME" \
+  --query "services[0].deployments[?status=='PRIMARY'].rolloutState" \
+  --output text)
 
-🔹 SECTION 2: AWS CDK (Imperative IaC in Code)
-✅ Use CDK when your team prefers Python, TypeScript, or OOP. CDK allows programmatic abstractions, better IDE support, and reusable infra components.
+if [[ "$STATUS" == "COMPLETED" ]]; then
+  echo "✅ $SERVICE_NAME is healthy in $CLUSTER_NAME"
+else
+  echo "❌ $SERVICE_NAME is not fully deployed. Status: $STATUS"
+  exit 2
+fi
 
-🧱 Step 1: Init Python CDK App
-cd infrastructure
-mkdir cdk && cd cdk
-cdk init app --language python
-What: Initializes a CDK project scaffold using Python.
-Why: This gives you a buildable project with app.py and an initial stack.
+✅ Security Practices:
+	•	set -euo pipefail → fail fast
+	•	Validates arguments
+	•	Doesn’t log secrets or tokens
 
-🔧 Install Dependencies
-pip install aws-cdk.aws-ec2 aws-cdk.aws-ecs aws-cdk.aws-ecr aws-cdk.aws-secretsmanager
-Why: CDK uses separate libraries per AWS service. You only install what you use (keeps stack clean and understandable).
+🔹 Step 1.2: Run locally
 
-📄 infra_stack.py
-vpc = ec2.Vpc(self, "NotestreamVPC", max_azs=2)
-What: Creates a secure VPC with 2 AZs (recommended baseline).
-Why: AZ redundancy improves fault tolerance.
+chmod +x scripts/health/check_ecs_health.sh
+./scripts/health/check_ecs_health.sh notes-cluster notes-service
 
-cluster = ecs.Cluster(self, "NotestreamCluster", vpc=vpc)
-Why: Required ECS cluster to deploy containers via Fargate.
 
-ecr.Repository(self, "BackendRepo", ...)
-Why: Same as Terraform — creates secure image registry with IMMUTABLE tags and scanning on push.
+⸻
 
-secrets.Secret(self, "DBSecret", ...)
-What: Creates a Secrets Manager entry with a generated password.
-Why: Avoid hardcoding secrets. Let AWS generate and rotate sensitive data.
+🐍 Part 2: Python Script – SBOM Formatter
 
-🚀 Deploy
-cdk deploy
-What: Synthesizes templates → deploys them using CloudFormation behind the scenes.
-Why: CDK is a higher-level abstraction over CloudFormation. Same security benefits, better developer experience.
+🔹 Step 2.1: Install Trivy and generate SBOM
 
-🔹 SECTION 3: CloudFormation (YAML/JSON Declarative)
-✅ Use CloudFormation for full AWS-native IaC. It's harder to reuse than CDK or Terraform but is deeply integrated into AWS services.
+trivy image --format cyclonedx --output results.json yourapp:latest
 
-📄 stack.yaml
-Resources:
-  NotestreamVPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-What: Standard YAML declaration for a VPC.
-Why: Same as Terraform/CDK, but less modular. Still used heavily in AWS SAM and legacy stacks.
+🔹 Step 2.2: trivy_to_html.py
 
-BackendECR:
-  Type: AWS::ECR::Repository
-  Properties:
-    RepositoryName: notestream-backend
-    ImageScanningConfiguration:
-      scanOnPush: true
-Security Benefit: All pushed images are scanned for CVEs before being marked deployable.
+import json, sys
+from pathlib import Path
 
-Secrets:
-  Type: AWS::SecretsManager::Secret
-  Properties:
-    Name: notestream/db
-    SecretString: '{"username":"user", "password":"change-me"}'
-Warning: Don’t hardcode secrets in YAML. Use parameters or secret values from SSM or encrypted input.
+def generate_html(input_file: str):
+    data = json.loads(Path(input_file).read_text())
 
-🚀 Deploy via CLI
-aws cloudformation deploy \
-  --template-file stack.yaml \
-  --stack-name notestream-iac \
-  --capabilities CAPABILITY_NAMED_IAM
-Why: Deploys your stack safely. CAPABILITY_NAMED_IAM is required if you’re creating IAM roles or policies.
+    html = "<html><body><h1>SBOM Vulnerabilities</h1><ul>"
+    for component in data.get("components", []):
+        name = component.get("name", "unknown")
+        version = component.get("version", "unknown")
+        html += f"<li>{name} – {version}</li>"
+    html += "</ul></body></html>"
 
-✅ Up Next (optional): Annotate AWS SAM if you want deeper Lambda/serverless support.
+    output_file = input_file.replace(".json", ".html")
+    Path(output_file).write_text(html)
+    print(f"✅ SBOM report saved to {output_file}")
 
-Would you like me to proceed with the annotated Challenge Lab, or annotate the SAM section before continuing?
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python trivy_to_html.py results.json")
+        sys.exit(1)
+    generate_html(sys.argv[1])
 
-You said:
-Annotate the Sam before continuing. Sam will be useful for any serverless infrastructure 
-ChatGPT said:
-Perfect. Here's the annotated AWS SAM section from Week 5’s Guided Lab — focused on secure, production-ready serverless infrastructure for notestream.
+✅ Security Practices:
+	•	No eval(), no shell injection
+	•	Validates file input
 
-🔹 SECTION 4: AWS SAM (Serverless Framework)
-✅ Use AWS SAM (Serverless Application Model) when deploying Lambda functions, API Gateway, DynamoDB, and event-driven microservices — with the added benefit of built-in security, templates, and local testing.
+python scripts/sbom/trivy_to_html.py results.json
 
-📁 Directory Structure
-infrastructure/sam/
-├── template.yaml        # Core SAM infrastructure file
-├── backend/             # Dockerized Lambda service (optional)
-└── events/              # Test payloads for local invocation
-🧱 Step 1: Create template.yaml
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
 
-Description: Notestream serverless API
+⸻
 
-Globals:
-  Function:
-    Timeout: 10
-    MemorySize: 512
-    Runtime: python3.11
-    Architectures: [x86_64]
-    Tracing: Active   # Enables X-Ray
-🔍 Explanation
-Transform: Required for SAM — tells CloudFormation to use SAM’s syntax extensions.
+🔐 Part 3: Bash – Secure Secrets Fetch from AWS SSM
 
-Globals: DRY section for setting defaults like memory, timeout, and runtime.
+🔹 Step 3.1: fetch_secrets.sh
 
-Tracing: Enables AWS X-Ray for observability. Crucial for debugging in microservices environments.
+#!/bin/bash
+set -euo pipefail
 
-📄 Define a Lambda + API Gateway
-Resources:
-  BackendAPI:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: notestream-backend
-      PackageType: Image
-      ImageUri: <your-ecr-image-url>      # e.g., 12345678.dkr.ecr.us-east-1.amazonaws.com/backend:latest
-      Events:
-        GetApi:
-          Type: Api
-          Properties:
-            Path: /api
-            Method: get
-      Environment:
-        Variables:
-          DB_SECRET_NAME: notestream/db
-      Policies:
-        - SecretsManagerReadWrite
-        - CloudWatchLogsFullAccess
-🔍 Explanation
-Type: PackageType: Image allows you to use a containerized Lambda from ECR — powerful for Flask/FastAPI/Node.js apps packaged as microservices.
+SECRETS=("DB_PASSWORD" "API_KEY")
 
-Events: Creates an API Gateway → /api → triggers this Lambda.
+for secret in "${SECRETS[@]}"; do
+  VALUE=$(aws ssm get-parameter \
+    --name "/devsecops/${secret}" \
+    --with-decryption \
+    --query "Parameter.Value" \
+    --output text)
+  echo "export $secret='$VALUE'" >> .env
+done
 
-Environment Variables: Inject secret name dynamically.
+echo "✅ Secrets loaded into .env"
 
-Policies: Grants the function read-only access to Secrets Manager and logging — follows least-privilege.
+✅ Fetches encrypted parameters securely
+✅ IAM permissions required: ssm:GetParameter, kms:Decrypt
 
-📁 Dockerfile for Lambda (optional)
-Place in sam/backend/Dockerfile:
+⸻
 
-FROM public.ecr.aws/lambda/python:3.11
+☁️ Part 4: Python – Archive Logs to S3
 
-COPY app.py .
+import boto3, datetime, gzip, shutil
+from pathlib import Path
 
-CMD ["app.lambda_handler"]
-✅ This uses the AWS-provided Lambda base image and runs app.lambda_handler (standard entry point).
-🔐 Lambda images must be under 10GB and use secure entry points.
+logs_dir = Path("/var/log/myapp")
+bucket = "devsecops-log-archive"
+date = datetime.datetime.now().strftime("%Y-%m-%d")
 
-🧪 Step 2: Local Testing (Optional but Powerful)
-sam build
-What it does: Converts your template.yaml and code/images into a CloudFormation-compatible package and builds Docker images if needed.
+session = boto3.Session()
+s3 = session.client("s3")
 
-sam local invoke BackendAPI \
-  --event events/get-event.json
-Why: Run the Lambda locally with test data. Helps with tight inner-loop testing before deployment.
+for log_file in logs_dir.glob("*.log"):
+    compressed = log_file.with_suffix(".gz")
+    with open(log_file, 'rb') as f_in, gzip.open(compressed, 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
 
-🚀 Step 3: Secure Deployment
-sam deploy --guided
-What this does:
+    s3_key = f"logs/{date}/{compressed.name}"
+    s3.upload_file(str(compressed), bucket, s3_key)
+    print(f"✅ Uploaded {compressed.name} to s3://{bucket}/{s3_key}")
 
-Prompts for stack name, AWS region, and image repo
+✅ Handles log rotation
+✅ Compresses locally, uploads securely with Boto3
+✅ Avoids uploading raw secrets
 
-Uploads your images to ECR (if not already there)
+⸻
 
-Deploys via CloudFormation
+🧪 Bonus: CI/CD Integration
 
-🔐 Best Practice: Enable encryption and retention policies if using DynamoDB or logs. Use --capabilities CAPABILITY_IAM to allow role creation.
+GitHub Actions example:
 
-🔐 Security Considerations
-Risk	Mitigation
-Lambda can access too much	Use managed policies (e.g., SecretsManagerReadOnly), or custom IAM
-API Gateway exposes insecure endpoints	Add auth (API Key, IAM, Cognito, JWT) in later modules
-Hardcoded secrets in environment	Use Secrets Manager or SSM to inject
-Unscanned Lambda base images	Use Trivy locally before pushing, or deploy only signed images to ECR
-Excessive logs/exceptions	Use try/catch inside lambda_handler() with structured logging and X-Ray
-🔁 CI/CD Ready
-SAM can easily integrate into GitHub Actions, GitLab CI/CD, or CodePipeline:
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: bash scripts/health/check_ecs_health.sh notes-cluster notes-service
 
-- name: Build SAM
-  run: sam build
+Secrets fetch before pipeline step:
 
-- name: Deploy SAM
-  run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
-    --stack-name notestream-serverless \
-    --capabilities CAPABILITY_IAM
-✅ Summary: Why Use AWS SAM in DevSecOps?
-Benefit	Explanation
-Native support for API Gateway + Lambda + Secrets	Secure by default with reduced glue code
-Local testability	Avoids slow deploy-feedback cycles
-Image-based Lambda support	Use Dockerized apps (Python, Node.js) as serverless microservices
-Seamless CI/CD integration	Works with GitHub Actions, GitLab, AWS CodePipeline
-Deep CloudFormation integration	Policies, IAM, logs, tracing are native AWS features
-Easy to enforce security policies	Run cfn-lint, cfn_nag, or Checkov against templates
-Would you like to now proceed with the annotated Challenge Lab for Week 5? This will include:
+      - name: Load Secrets
+        run: bash scripts/secrets/fetch_secrets.sh
 
-Drift simulation
-
-Insecure config injection
-
-Policy violations
-
-Detection and rollback scenarios
-
-You said:
-Yes proceed 
-ChatGPT said:
-Great — let’s move on to the annotated Week 5 Challenge Lab, where you’ll simulate real-world DevSecOps incidents using IaC misconfigurations and security violations — then detect and fix them with tools like checkov, tfsec, cfn-lint, and CDK's cdk-nag.
+✅ Your scripts are now portable, secure, and CI-ready.

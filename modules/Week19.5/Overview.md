@@ -1,3 +1,3 @@
 # Overview.md
 
-*This section was not found or skipped.*
+*Section missing or skipped in transcript.*
