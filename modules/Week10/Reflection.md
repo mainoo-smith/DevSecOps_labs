@@ -706,26 +706,6 @@ This mirrors the exact type of architecture used in large, security-sensitive AW
 
 ---
 
-## 🧭 What’s Next?
-
-Now I’ll take on **Serverless Infrastructure as Code** using **AWS SAM**:
-
-- Securely define APIs, Lambda functions, secrets, and IAM
-- Understand event-driven DevSecOps design
-- Apply the same IaC and security rigor to serverless workloads
-
----
-Let me know if you're ready to continue to:
-
-🔧 Part 3 – AWS SAM: Serverless, Secure APIs, and Parameterized Workflows
-We'll annotate each part of the template.yaml, build real API Gateway + Lambda flows, and enforce secrets and policies just like in an enterprise app.
-
-Ready to proceed?
-
-You said:
-Proceed 
-ChatGPT said:
-Excellent. Let’s now dive into:
 
 🔧 Part 3 – AWS SAM: Serverless Secure APIs + Lambda with Secrets and Policies
 This will cover how to design a secure, parameterized, and production-ready serverless stack using AWS SAM — focusing on:
@@ -939,22 +919,6 @@ Function locally testable with sam local	✅
 
 ---
 
-### ✅ Next Steps:
-
-Would you like me to now provide:
-
-1. ✅ The `.md` Reflection file for **Part 3 – SAM**  
-2. 🧩 A bonus comparison chart between **CDK vs Terraform vs SAM**  
-3. 🧠 A DevSecOps decision flow on when to use which tool
-
-Or are you ready to **move forward to Week 11 – Kubernetes Security I (RBAC, Policies, Network Security)**?
-
-Let me know your preference!
-You said:
-Provide those 3
-ChatGPT said:
-Great choice. Here's a clean and copy-paste-ready .md file that delivers:
-
 📁 Week10/Comparison-Reflection-SAM-CDK-Terraform.md
 # 🧠 Reflection & Tool Comparison – SAM vs CDK vs Terraform in DevSecOps
 
@@ -1000,7 +964,7 @@ Working with AWS SAM gave me a strong foundation in building **secure, API-drive
 | CI/CD integration | ✅ Easy with GitHub, GitLab, Jenkins | ✅ With CDK Pipelines or GitHub | ✅ Supports CodePipeline, GitHub |
 
 ---
-
+---
 ## 🤔 When Would I Use Each?
 
 ### ✅ Terraform
@@ -1034,25 +998,6 @@ Working with AWS SAM gave me a strong foundation in building **secure, API-drive
 
 ---
 
-## 🧭 What's Next?
 
-Now that I understand how to:
 
-- Build secure, serverless infrastructure with **SAM**
-- Compose reusable constructs with **CDK**
-- Deploy cloud-native apps using **Terraform modules**
 
-I’m ready to **secure Kubernetes clusters** and explore **DevSecOps at runtime and admission layers** in **Week 11**.
-
----
-✅ Let me know if you’d like me to proceed with:
-
-🔒 Week 11: Kubernetes Security I – RBAC, NetworkPolicies, and Admission Controls
-It’ll include evolving our app to run a secure microservice in Kubernetes using DevSecOps patterns.
-
-Ready to begin?
-
-You said:
-Ready
-ChatGPT said:
-Perfect. Let’s move into Week 11 of your 20-week DevSecOps course.

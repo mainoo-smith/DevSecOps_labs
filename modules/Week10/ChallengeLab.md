@@ -146,16 +146,4 @@ No public subnets in prod environment
 All secrets must originate from aws_secretsmanager_secret
 
 
----
 
-Let me know when you're ready for:
-
-- 🛡️ `Security.md`: Best practices recap and hardened patterns across Terraform & CDK
-- 💬 `Reflection.md`: Application architecture evolution + questions
-- 📦 Week 11 Preview: Kubernetes Security (RBAC, Network Policies, Least Privilege)
-
-Shall we continue?
-You said:
-Continue 
-ChatGPT said:
-Excellent — let’s move on with Security.md for Week 10 – IaC Fundamentals & Security (Terraform, CDK, SAM). This section summarizes security takeaways, patterns, and best practices that you’ll apply repeatedly in enterprise DevSecOps roles.
